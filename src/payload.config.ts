@@ -30,6 +30,7 @@ import { HomeSections } from './globals/HomeSections'
 import { Popup } from './globals/Popup'
 import { SiteSettings } from './globals/SiteSettings'
 import { defaultLocale } from './i18n/config'
+import { migrations } from './migrations'
 
 const filename = fileURLToPath(import.meta.url)
 const dirname = path.dirname(filename)
@@ -110,6 +111,8 @@ export default buildConfig({
     client: {
       url: process.env.DATABASE_URL || 'file:./data/divepotato.db',
     },
+    // Production applies pending migrations on start
+    prodMigrations: migrations,
   }),
   sharp,
   plugins: [],
