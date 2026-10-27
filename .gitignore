@@ -1,0 +1,23 @@
+# Dependencies and build output
+node_modules
+.next
+out
+next-env.d.ts
+*.tsbuildinfo
+
+# Local database (SQLite) and uploaded media: back these up, never commit them
+data/*.db
+data/*.db-journal
+data/*.db-wal
+data/*.db-shm
+media/
+media-production/
+
+# Secrets: keep the example file
+.env*
+!.env.example
+
+.DS_Store
+npm-debug.log*
+# Written by `next dev`
+/AGENTS.md
