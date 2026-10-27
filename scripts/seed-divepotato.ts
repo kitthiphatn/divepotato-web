@@ -12,6 +12,7 @@ import fs from 'fs'
 import path from 'path'
 import { getPayload, type Payload } from 'payload'
 
+import { addDays, shopDay } from '../src/lib/dates'
 import config from '../src/payload.config'
 import type { User } from '../src/payload-types'
 import {
@@ -65,12 +66,9 @@ const lines = (items: L[], locale: 'th' | 'en') => items.map((i) => ({ text: i[l
 
 const DEFAULT_PHOTOS_DIR = '/home/claude/designs/shared/photos'
 
-const day = (offset: number) => {
-  const d = new Date()
-  d.setHours(9, 0, 0, 0)
-  d.setDate(d.getDate() + offset)
-  return d.toISOString()
-}
+// 09:00 shop time (Bangkok), `offset` days from today
+const day = (offset: number) =>
+  new Date(`${addDays(shopDay(new Date()), offset)}T09:00:00+07:00`).toISOString()
 
 function log(line: string) {
   console.log(line)

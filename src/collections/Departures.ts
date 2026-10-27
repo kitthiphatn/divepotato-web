@@ -2,6 +2,7 @@ import type { CollectionBeforeChangeHook, CollectionConfig } from 'payload'
 
 import { adminOnly, bookingEditors, bookingReaders } from '../access/roles'
 import { auditAfterChange, auditAfterDelete } from '../hooks/audit'
+import { shopDay } from '../lib/dates'
 import { revalidateDeleted, revalidateDoc } from '../lib/revalidate'
 import { GROUPS } from './groups'
 
@@ -32,7 +33,7 @@ const setTitle: CollectionBeforeChangeHook = async ({ data, originalDoc, req }) 
       // Related trip/course missing; keep the date only
     }
   }
-  const date = start ? new Date(start).toISOString().slice(0, 10) : ''
+  const date = start ? shopDay(start) : ''
   return { ...data, title: [name, date].filter(Boolean).join(' · ') }
 }
 
