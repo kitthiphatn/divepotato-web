@@ -1,6 +1,6 @@
 import type { GlobalConfig } from 'payload'
 
-import { contentTeam } from '../access/roles'
+import { contentTeam, hiddenFromGuide } from '../access/roles'
 import { GROUPS } from '../collections/groups'
 import { revalidateSite } from '../lib/revalidate'
 
@@ -9,6 +9,7 @@ export const Popup: GlobalConfig = {
   label: { th: 'ป๊อปอัปประกาศ (สไลด์รูป)', en: 'Announcement popup (slides)' },
   admin: {
     group: GROUPS.settings,
+    hidden: hiddenFromGuide,
     description: {
       th: 'แสดงเป็นหน้าต่างสไลด์รูป 16:9 ทันทีที่ลูกค้าเข้าเว็บ ใช้รูป 1600×900 พิกเซล และรูปมือถือ 1080×1920 พิกเซล',
       en: 'Shown as a 16:9 image slider as soon as visitors open the site. Use 1600×900 px images, plus 1080×1920 px for phones.',

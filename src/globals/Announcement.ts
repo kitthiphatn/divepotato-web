@@ -1,6 +1,6 @@
 import type { GlobalConfig } from 'payload'
 
-import { contentTeam } from '../access/roles'
+import { contentTeam, hiddenFromGuide } from '../access/roles'
 import { GROUPS } from '../collections/groups'
 import { revalidateSite } from '../lib/revalidate'
 
@@ -9,6 +9,7 @@ export const Announcement: GlobalConfig = {
   label: { th: 'แถบประกาศด่วน', en: 'Announcement bar' },
   admin: {
     group: GROUPS.settings,
+    hidden: hiddenFromGuide,
     description: {
       th: 'แสดงแถบด้านบนทุกหน้า เช่น งดออกเรือเนื่องจากคลื่นลม หรือโปรโมชั่นคอร์ส',
       en: 'Shown at the top of every page, e.g. trips cancelled due to weather, or a course promotion',

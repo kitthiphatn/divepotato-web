@@ -1,13 +1,13 @@
 import type { GlobalConfig } from 'payload'
 
-import { contentTeam } from '../access/roles'
+import { contentTeam, hiddenFromGuide } from '../access/roles'
 import { GROUPS } from '../collections/groups'
 import { revalidateSite } from '../lib/revalidate'
 
 export const SiteSettings: GlobalConfig = {
   slug: 'site-settings',
   label: { th: 'ตั้งค่าเว็บไซต์', en: 'Site settings' },
-  admin: { group: GROUPS.settings },
+  admin: { group: GROUPS.settings, hidden: hiddenFromGuide },
   access: { read: () => true, update: contentTeam },
   hooks: { afterChange: [revalidateSite] },
   fields: [

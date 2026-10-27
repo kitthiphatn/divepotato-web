@@ -1,14 +1,14 @@
 import type { GlobalConfig } from 'payload'
 
 import { seoField } from '../collections/shared'
-import { contentTeam } from '../access/roles'
+import { contentTeam, hiddenFromGuide } from '../access/roles'
 import { GROUPS } from '../collections/groups'
 import { revalidateSite } from '../lib/revalidate'
 
 export const AboutPage: GlobalConfig = {
   slug: 'about-page',
   label: { th: 'หน้าเกี่ยวกับเรา', en: 'About page' },
-  admin: { group: GROUPS.settings },
+  admin: { group: GROUPS.settings, hidden: hiddenFromGuide },
   access: { read: () => true, update: contentTeam },
   hooks: { afterChange: [revalidateSite] },
   fields: [

@@ -1,6 +1,6 @@
 import type { CollectionConfig } from 'payload'
 
-import { contentTeam } from '../access/roles'
+import { contentTeam, hiddenFromGuide } from '../access/roles'
 import { GROUPS } from './groups'
 import { contentHooks, publishedOrStaff, seoField, slugField } from './shared'
 
@@ -15,6 +15,7 @@ export const Posts: CollectionConfig = {
   admin: {
     useAsTitle: 'title',
     group: GROUPS.content,
+    hidden: hiddenFromGuide,
     defaultColumns: ['title', 'category', 'publishedAt', '_status'],
   },
   access: {

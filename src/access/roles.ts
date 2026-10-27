@@ -32,3 +32,6 @@ export const anyUser: Access = ({ req: { user } }) => Boolean(user)
 export const nobody: Access = () => false
 
 export const adminField: FieldAccess = ({ req: { user } }) => isAdmin(user)
+
+// Admin `hidden` for collections a guide has no use for (they work from departures and manifests)
+export const hiddenFromGuide = ({ user }: { user: unknown }) => roleOf(user) === 'guide'

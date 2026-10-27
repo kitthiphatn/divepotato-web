@@ -1,13 +1,13 @@
 import type { GlobalConfig } from 'payload'
 
-import { contentTeam } from '../access/roles'
+import { contentTeam, hiddenFromGuide } from '../access/roles'
 import { GROUPS } from '../collections/groups'
 import { revalidateSite } from '../lib/revalidate'
 
 export const CookieConsent: GlobalConfig = {
   slug: 'cookie-consent',
   label: { th: 'แบนเนอร์คุกกี้', en: 'Cookie banner' },
-  admin: { group: GROUPS.settings },
+  admin: { group: GROUPS.settings, hidden: hiddenFromGuide },
   access: { read: () => true, update: contentTeam },
   hooks: {
     afterChange: [revalidateSite],

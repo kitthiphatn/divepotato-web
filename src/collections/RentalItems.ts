@@ -1,6 +1,6 @@
 import type { CollectionConfig } from 'payload'
 
-import { anyUser, contentTeam } from '../access/roles'
+import { anyUser, contentTeam, hiddenFromGuide } from '../access/roles'
 import { GROUPS } from './groups'
 
 export const RentalItems: CollectionConfig = {
@@ -12,6 +12,7 @@ export const RentalItems: CollectionConfig = {
   admin: {
     useAsTitle: 'name',
     group: GROUPS.shop,
+    hidden: hiddenFromGuide,
     defaultColumns: ['name', 'pricePerDay', 'stock'],
   },
   access: { read: anyUser, create: contentTeam, update: contentTeam, delete: contentTeam },

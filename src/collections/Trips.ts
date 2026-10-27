@@ -1,6 +1,6 @@
 import type { CollectionConfig } from 'payload'
 
-import { contentTeam } from '../access/roles'
+import { contentTeam, hiddenFromGuide } from '../access/roles'
 import { auditAfterChange, auditAfterDelete } from '../hooks/audit'
 import { revalidateDeleted, revalidateDoc } from '../lib/revalidate'
 import { GROUPS } from './groups'
@@ -32,6 +32,7 @@ export const Trips: CollectionConfig = {
   admin: {
     useAsTitle: 'title',
     group: GROUPS.catalog,
+    hidden: hiddenFromGuide,
     defaultColumns: ['title', 'type', 'price', '_status'],
   },
   access: {

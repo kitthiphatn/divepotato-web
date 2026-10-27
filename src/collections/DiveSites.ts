@@ -1,6 +1,6 @@
 import type { CollectionConfig } from 'payload'
 
-import { contentTeam } from '../access/roles'
+import { contentTeam, hiddenFromGuide } from '../access/roles'
 import { GROUPS } from './groups'
 import { contentHooks } from './shared'
 
@@ -13,6 +13,7 @@ export const DiveSites: CollectionConfig = {
   admin: {
     useAsTitle: 'name',
     group: GROUPS.catalog,
+    hidden: hiddenFromGuide,
     defaultColumns: ['name', 'region'],
   },
   access: { read: () => true, create: contentTeam, update: contentTeam, delete: contentTeam },

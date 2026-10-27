@@ -1,6 +1,6 @@
 import type { CollectionConfig } from 'payload'
 
-import { contentTeam } from '../access/roles'
+import { contentTeam, hiddenFromGuide } from '../access/roles'
 import { GROUPS } from './groups'
 
 export const ProductVariants: CollectionConfig = {
@@ -12,6 +12,7 @@ export const ProductVariants: CollectionConfig = {
   admin: {
     useAsTitle: 'sku',
     group: GROUPS.shop,
+    hidden: hiddenFromGuide,
     defaultColumns: ['sku', 'product', 'size', 'price', 'stock'],
   },
   access: { read: () => true, create: contentTeam, update: contentTeam, delete: contentTeam },

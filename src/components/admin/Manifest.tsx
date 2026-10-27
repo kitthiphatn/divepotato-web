@@ -16,6 +16,13 @@ const LEVELS: Record<string, string> = {
   rescue: 'Rescue',
   dm: 'DM',
 }
+const STATUS: Record<string, { th: string; en: string }> = {
+  hold: { th: 'กันที่นั่ง', en: 'Hold' },
+  pending_review: { th: 'รอตรวจสลิป', en: 'Pending review' },
+  deposit_paid: { th: 'มัดจำแล้ว', en: 'Deposit paid' },
+  paid: { th: 'ชำระครบ', en: 'Paid' },
+  completed: { th: 'จบทริป', en: 'Completed' },
+}
 // Bookings that no longer bring anyone on the trip
 const VOID = ['cancelled', 'refunded', 'expired']
 
@@ -144,7 +151,7 @@ export async function ManifestView(props: AdminViewServerProps) {
                     ) : null}
                   </td>
                   <td>{booking.code}</td>
-                  <td>{booking.status}</td>
+                  <td>{STATUS[booking.status]?.[lang] ?? booking.status}</td>
                   <td>{LEVELS[p.certLevel ?? 'none'] ?? p.certLevel}</td>
                   <td>{p.certNo || '-'}</td>
                   <td>{p.suitSize || '-'}</td>

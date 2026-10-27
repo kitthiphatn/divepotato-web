@@ -1,6 +1,6 @@
 import type { CollectionConfig } from 'payload'
 
-import { anyUser, contentTeam } from '../access/roles'
+import { anyUser, contentTeam, hiddenFromGuide } from '../access/roles'
 import { GROUPS } from './groups'
 
 export const Media: CollectionConfig = {
@@ -9,7 +9,7 @@ export const Media: CollectionConfig = {
     singular: { th: 'ไฟล์', en: 'Media' },
     plural: { th: 'คลังรูป', en: 'Media' },
   },
-  admin: { group: GROUPS.content },
+  admin: { group: GROUPS.content, hidden: hiddenFromGuide },
   access: {
     read: () => true,
     // Staff can upload payment slips, so any signed-in user may add files

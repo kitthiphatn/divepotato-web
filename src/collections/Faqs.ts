@@ -1,6 +1,6 @@
 import type { CollectionConfig } from 'payload'
 
-import { contentTeam } from '../access/roles'
+import { contentTeam, hiddenFromGuide } from '../access/roles'
 import { GROUPS } from './groups'
 import { contentHooks } from './shared'
 
@@ -15,6 +15,7 @@ export const Faqs: CollectionConfig = {
   admin: {
     useAsTitle: 'question',
     group: GROUPS.content,
+    hidden: hiddenFromGuide,
     defaultColumns: ['question', 'category', 'showOnHome', 'order'],
   },
   access: { read: () => true, create: contentTeam, update: contentTeam, delete: contentTeam },

@@ -1,6 +1,6 @@
 import type { GlobalConfig } from 'payload'
 
-import { contentTeam } from '../access/roles'
+import { contentTeam, hiddenFromGuide } from '../access/roles'
 import { GROUPS } from '../collections/groups'
 import { revalidateSite } from '../lib/revalidate'
 
@@ -9,7 +9,7 @@ export const SERVICE_ICONS = ['mask', 'boat', 'certificate', 'shield', 'globe', 
 export const HomeSections: GlobalConfig = {
   slug: 'home-sections',
   label: { th: 'เนื้อหาหน้าแรก', en: 'Homepage sections' },
-  admin: { group: GROUPS.settings },
+  admin: { group: GROUPS.settings, hidden: hiddenFromGuide },
   access: { read: () => true, update: contentTeam },
   hooks: { afterChange: [revalidateSite] },
   fields: [

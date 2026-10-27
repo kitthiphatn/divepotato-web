@@ -1,6 +1,6 @@
 import type { CollectionConfig } from 'payload'
 
-import { contentTeam } from '../access/roles'
+import { contentTeam, hiddenFromGuide } from '../access/roles'
 import { GROUPS } from './groups'
 import {
   contentHooks,
@@ -21,6 +21,7 @@ export const Courses: CollectionConfig = {
   admin: {
     useAsTitle: 'title',
     group: GROUPS.catalog,
+    hidden: hiddenFromGuide,
     defaultColumns: ['title', 'padiCode', 'days', 'price', '_status'],
   },
   access: {
