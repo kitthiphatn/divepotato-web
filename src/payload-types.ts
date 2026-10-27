@@ -70,6 +70,9 @@ export interface Config {
     trips: Trip;
     courses: Course;
     'dive-sites': DiveSite;
+    products: Product;
+    'product-variants': ProductVariant;
+    'rental-items': RentalItem;
     posts: Post;
     faqs: Faq;
     media: Media;
@@ -80,11 +83,18 @@ export interface Config {
     'payload-preferences': PayloadPreference;
     'payload-migrations': PayloadMigration;
   };
-  collectionsJoins: {};
+  collectionsJoins: {
+    products: {
+      variants: 'product-variants';
+    };
+  };
   collectionsSelect: {
     trips: TripsSelect<false> | TripsSelect<true>;
     courses: CoursesSelect<false> | CoursesSelect<true>;
     'dive-sites': DiveSitesSelect<false> | DiveSitesSelect<true>;
+    products: ProductsSelect<false> | ProductsSelect<true>;
+    'product-variants': ProductVariantsSelect<false> | ProductVariantsSelect<true>;
+    'rental-items': RentalItemsSelect<false> | RentalItemsSelect<true>;
     posts: PostsSelect<false> | PostsSelect<true>;
     faqs: FaqsSelect<false> | FaqsSelect<true>;
     media: MediaSelect<false> | MediaSelect<true>;
@@ -300,6 +310,55 @@ export interface Course {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "products".
+ */
+export interface Product {
+  id: number;
+  title: string;
+  /**
+   * Lowercase letters, numbers and dashes, e.g. similan-liveaboard-4d3n
+   */
+  slug: string;
+  brand?: string | null;
+  category?: ('mask' | 'fins' | 'wetsuit' | 'computer' | 'accessory') | null;
+  description?: string | null;
+  images?: (number | Media)[] | null;
+  variants?: {
+    docs?: (number | ProductVariant)[];
+    hasNextPage?: boolean;
+    totalDocs?: number;
+  };
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "product-variants".
+ */
+export interface ProductVariant {
+  id: number;
+  product: number | Product;
+  sku: string;
+  size?: string | null;
+  price: number;
+  stock: number;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "rental-items".
+ */
+export interface RentalItem {
+  id: number;
+  name: string;
+  pricePerDay: number;
+  stock: number;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "posts".
  */
 export interface Post {
@@ -449,6 +508,18 @@ export interface PayloadLockedDocument {
     | ({
         relationTo: 'dive-sites';
         value: number | DiveSite;
+      } | null)
+    | ({
+        relationTo: 'products';
+        value: number | Product;
+      } | null)
+    | ({
+        relationTo: 'product-variants';
+        value: number | ProductVariant;
+      } | null)
+    | ({
+        relationTo: 'rental-items';
+        value: number | RentalItem;
       } | null)
     | ({
         relationTo: 'posts';
@@ -603,6 +674,45 @@ export interface DiveSitesSelect<T extends boolean = true> {
   region?: T;
   description?: T;
   image?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "products_select".
+ */
+export interface ProductsSelect<T extends boolean = true> {
+  title?: T;
+  slug?: T;
+  brand?: T;
+  category?: T;
+  description?: T;
+  images?: T;
+  variants?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "product-variants_select".
+ */
+export interface ProductVariantsSelect<T extends boolean = true> {
+  product?: T;
+  sku?: T;
+  size?: T;
+  price?: T;
+  stock?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "rental-items_select".
+ */
+export interface RentalItemsSelect<T extends boolean = true> {
+  name?: T;
+  pricePerDay?: T;
+  stock?: T;
   updatedAt?: T;
   createdAt?: T;
 }

@@ -13,6 +13,9 @@ import { DiveSites } from './collections/DiveSites'
 import { Faqs } from './collections/Faqs'
 import { Media } from './collections/Media'
 import { Posts } from './collections/Posts'
+import { Products } from './collections/Products'
+import { ProductVariants } from './collections/ProductVariants'
+import { RentalItems } from './collections/RentalItems'
 import { Trips } from './collections/Trips'
 import { Users } from './collections/Users'
 import { AboutPage } from './globals/AboutPage'
@@ -50,7 +53,7 @@ export default buildConfig({
     defaultLocale,
     fallback: true,
   },
-  collections: [Trips, Courses, DiveSites, Posts, Faqs, Media, Users, AuditLogs],
+  collections: [Trips, Courses, DiveSites, Products, ProductVariants, RentalItems, Posts, Faqs, Media, Users, AuditLogs],
   globals: [SiteSettings, HomeSections, AboutPage, Announcement, Popup, CookieConsent],
   editor: lexicalEditor(),
   secret: process.env.PAYLOAD_SECRET || '',
