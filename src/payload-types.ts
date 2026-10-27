@@ -67,10 +67,14 @@ export interface Config {
   };
   blocks: {};
   collections: {
+    trips: Trip;
+    courses: Course;
+    'dive-sites': DiveSite;
     posts: Post;
     faqs: Faq;
     media: Media;
     users: User;
+    'audit-logs': AuditLog;
     'payload-kv': PayloadKv;
     'payload-locked-documents': PayloadLockedDocument;
     'payload-preferences': PayloadPreference;
@@ -78,10 +82,14 @@ export interface Config {
   };
   collectionsJoins: {};
   collectionsSelect: {
+    trips: TripsSelect<false> | TripsSelect<true>;
+    courses: CoursesSelect<false> | CoursesSelect<true>;
+    'dive-sites': DiveSitesSelect<false> | DiveSitesSelect<true>;
     posts: PostsSelect<false> | PostsSelect<true>;
     faqs: FaqsSelect<false> | FaqsSelect<true>;
     media: MediaSelect<false> | MediaSelect<true>;
     users: UsersSelect<false> | UsersSelect<true>;
+    'audit-logs': AuditLogsSelect<false> | AuditLogsSelect<true>;
     'payload-kv': PayloadKvSelect<false> | PayloadKvSelect<true>;
     'payload-locked-documents': PayloadLockedDocumentsSelect<false> | PayloadLockedDocumentsSelect<true>;
     'payload-preferences': PayloadPreferencesSelect<false> | PayloadPreferencesSelect<true>;
@@ -137,6 +145,161 @@ export interface UserAuthOperations {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "trips".
+ */
+export interface Trip {
+  id: number;
+  title: string;
+  /**
+   * Lowercase letters, numbers and dashes, e.g. similan-liveaboard-4d3n
+   */
+  slug: string;
+  type: 'daytrip' | 'liveaboard' | 'overseas';
+  levelRequired?: ('none' | 'ow' | 'aow' | 'rescue' | 'dm') | null;
+  price: number;
+  /**
+   * Leave empty to use the value in Booking settings
+   */
+  depositPct?: number | null;
+  summary?: string | null;
+  description?: {
+    root: {
+      type: string;
+      children: {
+        type: any;
+        version: number;
+        [k: string]: unknown;
+      }[];
+      direction: ('ltr' | 'rtl') | null;
+      format: 'left' | 'start' | 'center' | 'right' | 'end' | 'justify' | '';
+      indent: number;
+      version: number;
+    };
+    [k: string]: unknown;
+  } | null;
+  itinerary?:
+    | {
+        day: number;
+        title: string;
+        text?: string | null;
+        id?: string | null;
+      }[]
+    | null;
+  includes?:
+    | {
+        text: string;
+        id?: string | null;
+      }[]
+    | null;
+  excludes?:
+    | {
+        text: string;
+        id?: string | null;
+      }[]
+    | null;
+  diveSites?: (number | DiveSite)[] | null;
+  gallery?: (number | Media)[] | null;
+  /**
+   * Optional; the title and summary are used when empty.
+   */
+  seo?: {
+    title?: string | null;
+    description?: string | null;
+    image?: (number | null) | Media;
+  };
+  updatedAt: string;
+  createdAt: string;
+  _status?: ('draft' | 'published') | null;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "dive-sites".
+ */
+export interface DiveSite {
+  id: number;
+  name: string;
+  region?: string | null;
+  description?: string | null;
+  image?: (number | null) | Media;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "media".
+ */
+export interface Media {
+  id: number;
+  alt: string;
+  updatedAt: string;
+  createdAt: string;
+  url?: string | null;
+  thumbnailURL?: string | null;
+  filename?: string | null;
+  mimeType?: string | null;
+  filesize?: number | null;
+  width?: number | null;
+  height?: number | null;
+  focalX?: number | null;
+  focalY?: number | null;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "courses".
+ */
+export interface Course {
+  id: number;
+  title: string;
+  /**
+   * Lowercase letters, numbers and dashes, e.g. similan-liveaboard-4d3n
+   */
+  slug: string;
+  padiCode?: string | null;
+  price: number;
+  days: number;
+  summary?: string | null;
+  description?: {
+    root: {
+      type: string;
+      children: {
+        type: any;
+        version: number;
+        [k: string]: unknown;
+      }[];
+      direction: ('ltr' | 'rtl') | null;
+      format: 'left' | 'start' | 'center' | 'right' | 'end' | 'justify' | '';
+      indent: number;
+      version: number;
+    };
+    [k: string]: unknown;
+  } | null;
+  prerequisites?:
+    | {
+        text: string;
+        id?: string | null;
+      }[]
+    | null;
+  includes?:
+    | {
+        text: string;
+        id?: string | null;
+      }[]
+    | null;
+  gallery?: (number | Media)[] | null;
+  /**
+   * Optional; the title and summary are used when empty.
+   */
+  seo?: {
+    title?: string | null;
+    description?: string | null;
+    image?: (number | null) | Media;
+  };
+  updatedAt: string;
+  createdAt: string;
+  _status?: ('draft' | 'published') | null;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "posts".
  */
 export interface Post {
@@ -179,25 +342,6 @@ export interface Post {
   updatedAt: string;
   createdAt: string;
   _status?: ('draft' | 'published') | null;
-}
-/**
- * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "media".
- */
-export interface Media {
-  id: number;
-  alt: string;
-  updatedAt: string;
-  createdAt: string;
-  url?: string | null;
-  thumbnailURL?: string | null;
-  filename?: string | null;
-  mimeType?: string | null;
-  filesize?: number | null;
-  width?: number | null;
-  height?: number | null;
-  focalX?: number | null;
-  focalY?: number | null;
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
@@ -249,6 +393,29 @@ export interface User {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "audit-logs".
+ */
+export interface AuditLog {
+  id: number;
+  summary?: string | null;
+  action: 'create' | 'update' | 'delete';
+  collectionSlug: string;
+  docId: string;
+  user?: (number | null) | User;
+  diff?:
+    | {
+        [k: string]: unknown;
+      }
+    | unknown[]
+    | string
+    | number
+    | boolean
+    | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "payload-kv".
  */
 export interface PayloadKv {
@@ -272,6 +439,18 @@ export interface PayloadLockedDocument {
   id: number;
   document?:
     | ({
+        relationTo: 'trips';
+        value: number | Trip;
+      } | null)
+    | ({
+        relationTo: 'courses';
+        value: number | Course;
+      } | null)
+    | ({
+        relationTo: 'dive-sites';
+        value: number | DiveSite;
+      } | null)
+    | ({
         relationTo: 'posts';
         value: number | Post;
       } | null)
@@ -286,6 +465,10 @@ export interface PayloadLockedDocument {
     | ({
         relationTo: 'users';
         value: number | User;
+      } | null)
+    | ({
+        relationTo: 'audit-logs';
+        value: number | AuditLog;
       } | null);
   globalSlug?: string | null;
   user: {
@@ -328,6 +511,100 @@ export interface PayloadMigration {
   batch?: number | null;
   updatedAt: string;
   createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "trips_select".
+ */
+export interface TripsSelect<T extends boolean = true> {
+  title?: T;
+  slug?: T;
+  type?: T;
+  levelRequired?: T;
+  price?: T;
+  depositPct?: T;
+  summary?: T;
+  description?: T;
+  itinerary?:
+    | T
+    | {
+        day?: T;
+        title?: T;
+        text?: T;
+        id?: T;
+      };
+  includes?:
+    | T
+    | {
+        text?: T;
+        id?: T;
+      };
+  excludes?:
+    | T
+    | {
+        text?: T;
+        id?: T;
+      };
+  diveSites?: T;
+  gallery?: T;
+  seo?:
+    | T
+    | {
+        title?: T;
+        description?: T;
+        image?: T;
+      };
+  updatedAt?: T;
+  createdAt?: T;
+  _status?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "courses_select".
+ */
+export interface CoursesSelect<T extends boolean = true> {
+  title?: T;
+  slug?: T;
+  padiCode?: T;
+  price?: T;
+  days?: T;
+  summary?: T;
+  description?: T;
+  prerequisites?:
+    | T
+    | {
+        text?: T;
+        id?: T;
+      };
+  includes?:
+    | T
+    | {
+        text?: T;
+        id?: T;
+      };
+  gallery?: T;
+  seo?:
+    | T
+    | {
+        title?: T;
+        description?: T;
+        image?: T;
+      };
+  updatedAt?: T;
+  createdAt?: T;
+  _status?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "dive-sites_select".
+ */
+export interface DiveSitesSelect<T extends boolean = true> {
+  name?: T;
+  region?: T;
+  description?: T;
+  image?: T;
+  updatedAt?: T;
+  createdAt?: T;
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
@@ -407,6 +684,20 @@ export interface UsersSelect<T extends boolean = true> {
         createdAt?: T;
         expiresAt?: T;
       };
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "audit-logs_select".
+ */
+export interface AuditLogsSelect<T extends boolean = true> {
+  summary?: T;
+  action?: T;
+  collectionSlug?: T;
+  docId?: T;
+  user?: T;
+  diff?: T;
+  updatedAt?: T;
+  createdAt?: T;
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema

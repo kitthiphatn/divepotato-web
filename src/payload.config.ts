@@ -7,9 +7,13 @@ import { buildConfig } from 'payload'
 import sharp from 'sharp'
 import { fileURLToPath } from 'url'
 
+import { AuditLogs } from './collections/AuditLogs'
+import { Courses } from './collections/Courses'
+import { DiveSites } from './collections/DiveSites'
 import { Faqs } from './collections/Faqs'
 import { Media } from './collections/Media'
 import { Posts } from './collections/Posts'
+import { Trips } from './collections/Trips'
 import { Users } from './collections/Users'
 import { AboutPage } from './globals/AboutPage'
 import { Announcement } from './globals/Announcement'
@@ -46,7 +50,7 @@ export default buildConfig({
     defaultLocale,
     fallback: true,
   },
-  collections: [Posts, Faqs, Media, Users],
+  collections: [Trips, Courses, DiveSites, Posts, Faqs, Media, Users, AuditLogs],
   globals: [SiteSettings, HomeSections, AboutPage, Announcement, Popup, CookieConsent],
   editor: lexicalEditor(),
   secret: process.env.PAYLOAD_SECRET || '',
