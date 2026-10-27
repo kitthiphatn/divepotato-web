@@ -8,10 +8,14 @@ import sharp from 'sharp'
 import { fileURLToPath } from 'url'
 
 import { AuditLogs } from './collections/AuditLogs'
+import { Bookings } from './collections/Bookings'
 import { Courses } from './collections/Courses'
+import { Customers } from './collections/Customers'
+import { Departures } from './collections/Departures'
 import { DiveSites } from './collections/DiveSites'
 import { Faqs } from './collections/Faqs'
 import { Media } from './collections/Media'
+import { Payments } from './collections/Payments'
 import { Posts } from './collections/Posts'
 import { Products } from './collections/Products'
 import { ProductVariants } from './collections/ProductVariants'
@@ -20,6 +24,7 @@ import { Trips } from './collections/Trips'
 import { Users } from './collections/Users'
 import { AboutPage } from './globals/AboutPage'
 import { Announcement } from './globals/Announcement'
+import { BookingSettings } from './globals/BookingSettings'
 import { CookieConsent } from './globals/CookieConsent'
 import { HomeSections } from './globals/HomeSections'
 import { Popup } from './globals/Popup'
@@ -53,8 +58,32 @@ export default buildConfig({
     defaultLocale,
     fallback: true,
   },
-  collections: [Trips, Courses, DiveSites, Products, ProductVariants, RentalItems, Posts, Faqs, Media, Users, AuditLogs],
-  globals: [SiteSettings, HomeSections, AboutPage, Announcement, Popup, CookieConsent],
+  collections: [
+    Bookings,
+    Departures,
+    Customers,
+    Payments,
+    Trips,
+    Courses,
+    DiveSites,
+    Products,
+    ProductVariants,
+    RentalItems,
+    Posts,
+    Faqs,
+    Media,
+    Users,
+    AuditLogs,
+  ],
+  globals: [
+    BookingSettings,
+    SiteSettings,
+    HomeSections,
+    AboutPage,
+    Announcement,
+    Popup,
+    CookieConsent,
+  ],
   editor: lexicalEditor(),
   secret: process.env.PAYLOAD_SECRET || '',
   typescript: {

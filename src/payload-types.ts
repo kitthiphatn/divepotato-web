@@ -67,6 +67,10 @@ export interface Config {
   };
   blocks: {};
   collections: {
+    bookings: Booking;
+    departures: Departure;
+    customers: Customer;
+    payments: Payment;
     trips: Trip;
     courses: Course;
     'dive-sites': DiveSite;
@@ -89,6 +93,10 @@ export interface Config {
     };
   };
   collectionsSelect: {
+    bookings: BookingsSelect<false> | BookingsSelect<true>;
+    departures: DeparturesSelect<false> | DeparturesSelect<true>;
+    customers: CustomersSelect<false> | CustomersSelect<true>;
+    payments: PaymentsSelect<false> | PaymentsSelect<true>;
     trips: TripsSelect<false> | TripsSelect<true>;
     courses: CoursesSelect<false> | CoursesSelect<true>;
     'dive-sites': DiveSitesSelect<false> | DiveSitesSelect<true>;
@@ -110,6 +118,7 @@ export interface Config {
   };
   fallbackLocale: ('false' | 'none' | 'null') | false | null | ('th' | 'en') | ('th' | 'en')[];
   globals: {
+    'booking-settings': BookingSetting;
     'site-settings': SiteSetting;
     'home-sections': HomeSection;
     'about-page': AboutPage;
@@ -118,6 +127,7 @@ export interface Config {
     'cookie-consent': CookieConsent;
   };
   globalsSelect: {
+    'booking-settings': BookingSettingsSelect<false> | BookingSettingsSelect<true>;
     'site-settings': SiteSettingsSelect<false> | SiteSettingsSelect<true>;
     'home-sections': HomeSectionsSelect<false> | HomeSectionsSelect<true>;
     'about-page': AboutPageSelect<false> | AboutPageSelect<true>;
@@ -152,6 +162,85 @@ export interface UserAuthOperations {
     email: string;
     password: string;
   };
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "bookings".
+ */
+export interface Booking {
+  id: number;
+  /**
+   * Automatic, e.g. DP-2611-0001
+   */
+  code?: string | null;
+  status: 'hold' | 'pending_review' | 'deposit_paid' | 'paid' | 'cancelled' | 'refunded' | 'completed' | 'expired';
+  holdExpiresAt?: string | null;
+  source?: ('website' | 'line' | 'phone' | 'walk_in' | 'agent') | null;
+  departure: number | Departure;
+  customer: number | Customer;
+  participants?:
+    | {
+        name: string;
+        certLevel?: ('none' | 'ow' | 'aow' | 'rescue' | 'dm') | null;
+        certNo?: string | null;
+        suitSize?: ('XS' | 'S' | 'M' | 'L' | 'XL' | 'XXL') | null;
+        shoeSize?: string | null;
+        rentals?: (number | RentalItem)[] | null;
+        healthOk?: boolean | null;
+        healthNotes?: string | null;
+        id?: string | null;
+      }[]
+    | null;
+  /**
+   * Calculated automatically
+   */
+  total?: number | null;
+  /**
+   * Calculated automatically
+   */
+  deposit?: number | null;
+  /**
+   * Calculated automatically
+   */
+  balance?: number | null;
+  timeline?:
+    | {
+        at: string;
+        event: string;
+        by?: (number | null) | User;
+        note?: string | null;
+        id?: string | null;
+      }[]
+    | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "departures".
+ */
+export interface Departure {
+  id: number;
+  /**
+   * Set automatically from the trip/course name and date
+   */
+  title?: string | null;
+  kind: 'trip' | 'course';
+  trip?: (number | null) | Trip;
+  course?: (number | null) | Course;
+  startDate: string;
+  endDate?: string | null;
+  capacity: number;
+  seatsHeld?: number | null;
+  /**
+   * Counted from bookings that are deposit paid, paid or completed
+   */
+  seatsBooked?: number | null;
+  boat?: string | null;
+  status: 'open' | 'full' | 'closed';
+  notes?: string | null;
+  updatedAt: string;
+  createdAt: string;
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
@@ -310,6 +399,85 @@ export interface Course {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "customers".
+ */
+export interface Customer {
+  id: number;
+  name: string;
+  email?: string | null;
+  phone?: string | null;
+  lineId?: string | null;
+  nationality?: string | null;
+  notes?: string | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "rental-items".
+ */
+export interface RentalItem {
+  id: number;
+  name: string;
+  pricePerDay: number;
+  stock: number;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "users".
+ */
+export interface User {
+  id: number;
+  name?: string | null;
+  /**
+   * Admin: everything · Editor: website content, trips, courses · Staff: view/update bookings, customers and departures · Guide: view departures and bookings for manifests only
+   */
+  role: 'admin' | 'editor' | 'staff' | 'guide';
+  updatedAt: string;
+  createdAt: string;
+  email: string;
+  resetPasswordToken?: string | null;
+  resetPasswordExpiration?: string | null;
+  salt?: string | null;
+  hash?: string | null;
+  resetPasswordRequestedAt?: string | null;
+  loginAttempts?: number | null;
+  lockUntil?: string | null;
+  sessions?:
+    | {
+        id: string;
+        createdAt?: string | null;
+        expiresAt: string;
+      }[]
+    | null;
+  password?: string | null;
+  collection: 'users';
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "payments".
+ */
+export interface Payment {
+  id: number;
+  booking: number | Booking;
+  provider: 'omise' | 'slip' | 'cash' | 'transfer';
+  kind: 'deposit' | 'balance' | 'refund';
+  amount: number;
+  status: 'pending' | 'succeeded' | 'failed' | 'rejected';
+  /**
+   * e.g. charge ID or transfer reference
+   */
+  ref?: string | null;
+  slip?: (number | null) | Media;
+  reviewedBy?: (number | null) | User;
+  reviewedAt?: string | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "products".
  */
 export interface Product {
@@ -341,18 +509,6 @@ export interface ProductVariant {
   sku: string;
   size?: string | null;
   price: number;
-  stock: number;
-  updatedAt: string;
-  createdAt: string;
-}
-/**
- * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "rental-items".
- */
-export interface RentalItem {
-  id: number;
-  name: string;
-  pricePerDay: number;
   stock: number;
   updatedAt: string;
   createdAt: string;
@@ -421,37 +577,6 @@ export interface Faq {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "users".
- */
-export interface User {
-  id: number;
-  name?: string | null;
-  /**
-   * Admin: everything · Editor: website content, trips, courses · Staff: view/update bookings, customers and departures · Guide: view departures and bookings for manifests only
-   */
-  role: 'admin' | 'editor' | 'staff' | 'guide';
-  updatedAt: string;
-  createdAt: string;
-  email: string;
-  resetPasswordToken?: string | null;
-  resetPasswordExpiration?: string | null;
-  salt?: string | null;
-  hash?: string | null;
-  resetPasswordRequestedAt?: string | null;
-  loginAttempts?: number | null;
-  lockUntil?: string | null;
-  sessions?:
-    | {
-        id: string;
-        createdAt?: string | null;
-        expiresAt: string;
-      }[]
-    | null;
-  password?: string | null;
-  collection: 'users';
-}
-/**
- * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "audit-logs".
  */
 export interface AuditLog {
@@ -497,6 +622,22 @@ export interface PayloadKv {
 export interface PayloadLockedDocument {
   id: number;
   document?:
+    | ({
+        relationTo: 'bookings';
+        value: number | Booking;
+      } | null)
+    | ({
+        relationTo: 'departures';
+        value: number | Departure;
+      } | null)
+    | ({
+        relationTo: 'customers';
+        value: number | Customer;
+      } | null)
+    | ({
+        relationTo: 'payments';
+        value: number | Payment;
+      } | null)
     | ({
         relationTo: 'trips';
         value: number | Trip;
@@ -582,6 +723,96 @@ export interface PayloadMigration {
   batch?: number | null;
   updatedAt: string;
   createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "bookings_select".
+ */
+export interface BookingsSelect<T extends boolean = true> {
+  code?: T;
+  status?: T;
+  holdExpiresAt?: T;
+  source?: T;
+  departure?: T;
+  customer?: T;
+  participants?:
+    | T
+    | {
+        name?: T;
+        certLevel?: T;
+        certNo?: T;
+        suitSize?: T;
+        shoeSize?: T;
+        rentals?: T;
+        healthOk?: T;
+        healthNotes?: T;
+        id?: T;
+      };
+  total?: T;
+  deposit?: T;
+  balance?: T;
+  timeline?:
+    | T
+    | {
+        at?: T;
+        event?: T;
+        by?: T;
+        note?: T;
+        id?: T;
+      };
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "departures_select".
+ */
+export interface DeparturesSelect<T extends boolean = true> {
+  title?: T;
+  kind?: T;
+  trip?: T;
+  course?: T;
+  startDate?: T;
+  endDate?: T;
+  capacity?: T;
+  seatsHeld?: T;
+  seatsBooked?: T;
+  boat?: T;
+  status?: T;
+  notes?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "customers_select".
+ */
+export interface CustomersSelect<T extends boolean = true> {
+  name?: T;
+  email?: T;
+  phone?: T;
+  lineId?: T;
+  nationality?: T;
+  notes?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "payments_select".
+ */
+export interface PaymentsSelect<T extends boolean = true> {
+  booking?: T;
+  provider?: T;
+  kind?: T;
+  amount?: T;
+  status?: T;
+  ref?: T;
+  slip?: T;
+  reviewedBy?: T;
+  reviewedAt?: T;
+  updatedAt?: T;
+  createdAt?: T;
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
@@ -851,6 +1082,41 @@ export interface PayloadMigrationsSelect<T extends boolean = true> {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "booking-settings".
+ */
+export interface BookingSetting {
+  id: number;
+  depositPct: number;
+  holdMinutes: number;
+  cancellationPolicy?: {
+    root: {
+      type: string;
+      children: {
+        type: any;
+        version: number;
+        [k: string]: unknown;
+      }[];
+      direction: ('ltr' | 'rtl') | null;
+      format: 'left' | 'start' | 'center' | 'right' | 'end' | 'justify' | '';
+      indent: number;
+      version: number;
+    };
+    [k: string]: unknown;
+  } | null;
+  omisePublicKey?: string | null;
+  /**
+   * Used from phase 2
+   */
+  omiseSecretKey?: string | null;
+  promptPayId?: string | null;
+  lineChannelToken?: string | null;
+  lineTarget?: string | null;
+  notifyEmail?: string | null;
+  updatedAt?: string | null;
+  createdAt?: string | null;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "site-settings".
  */
 export interface SiteSetting {
@@ -1015,6 +1281,24 @@ export interface CookieConsent {
   policyUrl?: string | null;
   updatedAt?: string | null;
   createdAt?: string | null;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "booking-settings_select".
+ */
+export interface BookingSettingsSelect<T extends boolean = true> {
+  depositPct?: T;
+  holdMinutes?: T;
+  cancellationPolicy?: T;
+  omisePublicKey?: T;
+  omiseSecretKey?: T;
+  promptPayId?: T;
+  lineChannelToken?: T;
+  lineTarget?: T;
+  notifyEmail?: T;
+  updatedAt?: T;
+  createdAt?: T;
+  globalType?: T;
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
