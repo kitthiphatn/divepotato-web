@@ -43,6 +43,20 @@ export default buildConfig({
     meta: {
       titleSuffix: ' · Dive Potato',
     },
+    components: {
+      beforeDashboard: ['/components/admin/Dashboard#Dashboard'],
+      afterNavLinks: ['/components/admin/NavLinks#NavLinks'],
+      views: {
+        departuresCalendar: {
+          Component: '/components/admin/DeparturesCalendar#DeparturesCalendar',
+          path: '/departures-calendar',
+        },
+        manifest: {
+          Component: '/components/admin/Manifest#ManifestView',
+          path: '/manifest/:id',
+        },
+      },
+    },
   },
   // Admin panel UI language
   i18n: {
