@@ -1,0 +1,18 @@
+@import 'tailwindcss';
+@import '@fontsource/ibm-plex-sans-thai/400.css';
+@import '@fontsource/ibm-plex-sans-thai/600.css';
+
+/* P0 placeholder styling only; the real "design 11" site is P1 */
+:root {
+  --accent: #ffc20e;
+}
+
+@theme inline {
+  --color-accent: var(--accent);
+  --font-sans: 'IBM Plex Sans Thai', system-ui, sans-serif;
+}
+
+body {
+  font-family: var(--font-sans);
+  line-height: 1.6;
+}
