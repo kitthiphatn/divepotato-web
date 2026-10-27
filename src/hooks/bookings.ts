@@ -78,7 +78,10 @@ export const prepareBooking: CollectionBeforeChangeHook = async ({
   }
 
   const status = next.status ?? originalDoc?.status
-  if (status === 'hold' && !(next.holdExpiresAt ?? originalDoc?.holdExpiresAt)) {
+  if (status !== 'hold' && status !== 'expired') {
+    // Only a held seat has an expiry
+    next.holdExpiresAt = null
+  } else if (status === 'hold' && !(next.holdExpiresAt ?? originalDoc?.holdExpiresAt)) {
     next.holdExpiresAt = new Date(Date.now() + (settings.holdMinutes ?? 15) * 60_000).toISOString()
   }
 
@@ -122,14 +125,21 @@ export async function syncDepartureSeats(req: PayloadRequest, departureId: numbe
     else if (b.status === 'hold' && (!b.holdExpiresAt || new Date(b.holdExpiresAt).getTime() > now))
       held += n
   }
-  await req.payload.update({
-    collection: 'departures',
-    id: departureId,
-    data: { seatsBooked: booked, seatsHeld: held },
-    req,
-    overrideAccess: true,
-    context: { skipAudit: true },
-  })
+  // `context` is merged into the shared request context, so restore the flag afterwards;
+  // otherwise the booking's own audit entry (written after this hook) would be skipped too
+  const previous = req.context.skipAudit
+  try {
+    await req.payload.update({
+      collection: 'departures',
+      id: departureId,
+      data: { seatsBooked: booked, seatsHeld: held },
+      req,
+      overrideAccess: true,
+      context: { skipAudit: true },
+    })
+  } finally {
+    req.context.skipAudit = previous
+  }
 }
 
 export const syncSeatsAfterChange: CollectionAfterChangeHook = async ({

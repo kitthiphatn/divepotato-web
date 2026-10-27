@@ -51,8 +51,8 @@ export const Bookings: CollectionConfig = {
   defaultSort: '-createdAt',
   hooks: {
     beforeChange: [prepareBooking],
-    afterChange: [syncSeatsAfterChange, auditAfterChange],
-    afterDelete: [syncSeatsAfterDelete, auditAfterDelete],
+    afterChange: [auditAfterChange, syncSeatsAfterChange],
+    afterDelete: [auditAfterDelete, syncSeatsAfterDelete],
   },
   fields: [
     {
