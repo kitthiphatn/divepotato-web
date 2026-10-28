@@ -4143,3 +4143,35 @@ select.inp {
     display: none;
   }
 }
+.chips a {
+  flex: none;
+  min-height: 38px;
+  padding: 0 15px;
+  border-radius: 999px;
+  border: 1px solid var(--ln);
+  background: var(--card);
+  font-size: 14px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  transition:
+    background 0.15s,
+    border-color 0.15s;
+}
+.chips a:hover {
+  border-color: var(--ln2);
+}
+.chips a[aria-pressed='true'] {
+  background: var(--inv);
+  border-color: var(--inv);
+  color: var(--invtx);
+}
+.chips a sup {
+  font-size: 12px;
+  opacity: 0.6;
+  vertical-align: baseline;
+}
+.tcard .im .noimg {
+  position: absolute;
+  inset: 0;
+}
