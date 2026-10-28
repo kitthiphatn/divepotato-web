@@ -4,11 +4,12 @@
 // staff roles. Admin only, saved through the Local API as the signed-in admin.
 import { revalidatePath } from 'next/cache'
 
+import { isValidUsername, normalizeUsername, USERNAME_MAX } from '@/lib/username'
 import type { User } from '@/payload-types'
 
 import { BO } from '../nav'
 import { textToLexical } from '../richtext'
-import { actionUser, errorMessage, isSession, type ActionResult } from '../server'
+import { actionUser, errorMessage, isSession, type ActionResult, type Session } from '../server'
 
 export type SettingsInput = {
   depositPct: number
@@ -110,9 +111,36 @@ export async function setRoleAction(userId: number, role: string): Promise<Actio
   }
 }
 
-export type StaffInput = { name: string; email: string; role: string; password: string }
+export type StaffInput = {
+  name: string
+  email: string
+  username: string
+  role: string
+  password: string
+}
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+
+// Checks a username's characters and that no other account uses it; returns an error message
+async function usernameProblem(s: Session, username: string, exceptId?: number) {
+  const { L } = s
+  if (!username) return L('ใส่ชื่อผู้ใช้', 'Enter a username')
+  if (!isValidUsername(username))
+    return L(
+      `ชื่อผู้ใช้ใช้ได้เฉพาะ a-z พิมพ์เล็ก ตัวเลข และ . _ - (ไม่เกิน ${USERNAME_MAX} ตัว)`,
+      `Usernames use lowercase a-z, 0-9 and . _ - only (up to ${USERNAME_MAX} characters)`,
+    )
+  const taken = await s.payload.count({
+    collection: 'users',
+    where: {
+      username: { equals: username },
+      ...(exceptId ? { id: { not_equals: exceptId } } : {}),
+    },
+    ...s.as,
+  })
+  if (taken.totalDocs) return L('ชื่อผู้ใช้นี้มีคนใช้แล้ว', 'This username is already taken')
+  return null
+}
 
 // Admins add a team member with a temporary password (shared with them in person or on LINE)
 export async function createStaffAction(v: StaffInput): Promise<ActionResult> {
@@ -121,6 +149,7 @@ export async function createStaffAction(v: StaffInput): Promise<ActionResult> {
   const { L } = s
   const name = v.name.trim()
   const email = v.email.trim().toLowerCase()
+  const username = normalizeUsername(v.username)
   if (!name) return { ok: false, message: L('ใส่ชื่อ', 'Enter a name') }
   if (!EMAIL_RE.test(email)) return { ok: false, message: L('อีเมลไม่ถูกต้อง', 'Invalid email') }
   if (!ROLES.includes(v.role as User['role']))
@@ -138,9 +167,11 @@ export async function createStaffAction(v: StaffInput): Promise<ActionResult> {
     })
     if (taken.totalDocs)
       return { ok: false, message: L('อีเมลนี้มีบัญชีแล้ว', 'This email already has an account') }
+    const problem = await usernameProblem(s, username)
+    if (problem) return { ok: false, message: problem }
     const u = await s.payload.create({
       collection: 'users',
-      data: { name, email, role: v.role as User['role'], password: v.password },
+      data: { name, email, username, role: v.role as User['role'], password: v.password },
       depth: 0,
       ...s.as,
     })
@@ -149,6 +180,35 @@ export async function createStaffAction(v: StaffInput): Promise<ActionResult> {
       ok: true,
       id: u.id,
       message: L(`เพิ่ม ${name} เข้าทีมแล้ว`, `${name} added to the team`),
+    }
+  } catch (err) {
+    return { ok: false, message: errorMessage(err, L) }
+  }
+}
+
+// Admins rename an account's username (the email stays as it is and still works to sign in)
+export async function setUsernameAction(userId: number, value: string): Promise<ActionResult> {
+  const s = await actionUser(['admin'])
+  if (!isSession(s)) return s
+  const { L } = s
+  const username = normalizeUsername(value)
+  try {
+    const problem = await usernameProblem(s, username, userId)
+    if (problem) return { ok: false, message: problem }
+    const u = await s.payload.update({
+      collection: 'users',
+      id: userId,
+      data: { username },
+      depth: 0,
+      ...s.as,
+    })
+    revalidatePath(BO, 'layout')
+    return {
+      ok: true,
+      message: L(
+        `${u.name || u.email} เข้าสู่ระบบด้วย ${u.username} ได้แล้ว`,
+        `${u.name || u.email} can now sign in as ${u.username}`,
+      ),
     }
   } catch (err) {
     return { ok: false, message: errorMessage(err, L) }

@@ -3197,7 +3197,7 @@ select.inp {
 }
 .staff li {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 160px;
+  grid-template-columns: minmax(0, 1fr) auto;
   gap: 12px;
   align-items: center;
   padding: 12px 0;
@@ -4666,6 +4666,16 @@ select.inp {
 }
 .staff .sact select.inp {
   width: 160px;
+}
+.staff .uname {
+  color: var(--ink);
+  font-weight: 500;
+}
+.field > .hint {
+  display: block;
+  margin-top: 6px;
+  font-size: 13px;
+  color: var(--mu);
 }
 .field > .unit.pw {
   display: block;

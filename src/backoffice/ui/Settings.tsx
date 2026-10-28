@@ -7,9 +7,12 @@ import {
   saveSettingsAction,
   setPasswordAction,
   setRoleAction,
+  setUsernameAction,
   type SettingsInput,
   type StaffInput,
 } from '../actions/settings'
+import { normalizeUsername, usernameFromEmail } from '@/lib/username'
+
 import { initials, money } from '../format'
 import { ROLE_LABEL, translator, type Lang } from '../i18n'
 import { Icon } from '../icons'
@@ -25,11 +28,19 @@ function tempPassword() {
 const blankStaff = (): StaffInput => ({
   name: '',
   email: '',
+  username: '',
   role: 'staff',
   password: tempPassword(),
 })
 
-export type StaffRow = { id: number; name: string; email: string; role: string; me: boolean }
+export type StaffRow = {
+  id: number
+  name: string
+  email: string
+  username: string
+  role: string
+  me: boolean
+}
 
 export function SettingsForm({
   lang,
@@ -55,13 +66,27 @@ export function SettingsForm({
     onChange: (e: { target: { value: string } }) => set(k, e.target.value as never),
   })
   const [invite, setInvite] = useState<StaffInput | null>(null)
+  // The username follows the email's local part until the admin types their own
+  const [usernameTyped, setUsernameTyped] = useState(false)
   const [reset, setReset] = useState<{ u: StaffRow; password: string } | null>(null)
+  const [rename, setRename] = useState<{ u: StaffRow; username: string } | null>(null)
+  const openInvite = () => {
+    setUsernameTyped(false)
+    setInvite(blankStaff())
+  }
   const addStaff = () =>
     invite &&
     start(async () => {
       const r = await createStaffAction(invite)
       toast(r.message, r.ok)
       if (r.ok) setInvite(null)
+    })
+  const saveUsername = () =>
+    rename &&
+    start(async () => {
+      const r = await setUsernameAction(rename.u.id, rename.username)
+      toast(r.message, r.ok)
+      if (r.ok) setRename(null)
     })
   const savePassword = () =>
     reset &&
@@ -319,7 +344,7 @@ export function SettingsForm({
         <section className="card fsec" id="set-staff">
           <div className="ch" style={{ marginBottom: 4 }}>
             <h3>{L('ทีมงานและสิทธิ์', 'Staff & roles')}</h3>
-            <button className="btn g sm" type="button" onClick={() => setInvite(blankStaff())}>
+            <button className="btn g sm" type="button" onClick={openInvite}>
               <Icon name="plus" />
               {L('เพิ่มทีมงาน', 'Add staff')}
             </button>
@@ -334,10 +359,32 @@ export function SettingsForm({
                       {u.name || u.email}
                       {u.me ? ` (${L('คุณ', 'you')})` : ''}
                     </b>
-                    <small>{u.email}</small>
+                    <small>
+                      {u.username ? (
+                        <>
+                          <span className="uname">@{u.username}</span> · {u.email}
+                        </>
+                      ) : (
+                        u.email
+                      )}
+                    </small>
                   </span>
                 </span>
                 <span className="sact">
+                  <button
+                    className="ibtn"
+                    type="button"
+                    title={L('แก้ชื่อผู้ใช้', 'Edit username')}
+                    aria-label={L(
+                      `แก้ชื่อผู้ใช้ของ ${u.name || u.email}`,
+                      `Edit the username for ${u.name || u.email}`,
+                    )}
+                    onClick={() =>
+                      setRename({ u, username: u.username || usernameFromEmail(u.email) })
+                    }
+                  >
+                    <Icon name="edit" />
+                  </button>
                   {!u.me && (
                     <button
                       className="ibtn"
@@ -423,8 +470,41 @@ export function SettingsForm({
                 value={invite.email}
                 required
                 autoComplete="off"
-                onChange={(e) => setInvite((x) => x && { ...x, email: e.target.value })}
+                onChange={(e) => {
+                  const email = e.target.value
+                  setInvite(
+                    (x) =>
+                      x && {
+                        ...x,
+                        email,
+                        username: usernameTyped ? x.username : usernameFromEmail(email),
+                      },
+                  )
+                }}
               />
+            </label>
+            <label className="field">
+              <span>{L('ชื่อผู้ใช้', 'Username')}</span>
+              <input
+                className="inp"
+                value={invite.username}
+                required
+                maxLength={32}
+                pattern="[a-z0-9._\-]+"
+                autoComplete="off"
+                autoCapitalize="none"
+                spellCheck={false}
+                onChange={(e) => {
+                  setUsernameTyped(true)
+                  setInvite((x) => x && { ...x, username: normalizeUsername(e.target.value) })
+                }}
+              />
+              <small className="hint">
+                {L(
+                  'ใช้เข้าสู่ระบบแทนอีเมลได้ · a-z พิมพ์เล็ก ตัวเลข และ . _ -',
+                  'Signs in instead of the email · lowercase a-z, 0-9 and . _ -',
+                )}
+              </small>
             </label>
             <label className="field">
               <span>{L('สิทธิ์', 'Role')}</span>
@@ -468,6 +548,54 @@ export function SettingsForm({
               <button className="btn y" type="submit" disabled={pending}>
                 <Icon name="plus" />
                 {L('เพิ่มทีมงาน', 'Add staff')}
+              </button>
+            </div>
+          </form>
+        </Modal>
+      )}
+
+      {rename && (
+        <Modal onClose={() => setRename(null)} label={L('แก้ชื่อผู้ใช้', 'Edit username')}>
+          <h3>{L('แก้ชื่อผู้ใช้', 'Edit username')}</h3>
+          <p className="s">
+            {rename.u.name || rename.u.email} ·{' '}
+            {L(
+              'ใช้ชื่อผู้ใช้ใหม่หรืออีเมลเดิมเข้าสู่ระบบได้',
+              'They can sign in with the new username or their email',
+            )}
+          </p>
+          <form
+            onSubmit={(e) => {
+              e.preventDefault()
+              saveUsername()
+            }}
+          >
+            <label className="field">
+              <span>{L('ชื่อผู้ใช้', 'Username')}</span>
+              <input
+                className="inp"
+                value={rename.username}
+                autoFocus
+                required
+                maxLength={32}
+                autoComplete="off"
+                autoCapitalize="none"
+                spellCheck={false}
+                onChange={(e) =>
+                  setRename((x) => x && { ...x, username: normalizeUsername(e.target.value) })
+                }
+              />
+              <small className="hint">
+                {L('a-z พิมพ์เล็ก ตัวเลข และ . _ -', 'Lowercase a-z, 0-9 and . _ -')}
+              </small>
+            </label>
+            <div className="acts">
+              <button className="btn o" type="button" onClick={() => setRename(null)}>
+                {L('ยกเลิก', 'Cancel')}
+              </button>
+              <button className="btn y" type="submit" disabled={pending}>
+                <Icon name="check" />
+                {L('บันทึกชื่อผู้ใช้', 'Save username')}
               </button>
             </div>
           </form>

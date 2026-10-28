@@ -25,6 +25,7 @@ export default async function SettingsPage() {
       id: u.id,
       name: u.name ?? '',
       email: u.email,
+      username: u.username ?? '',
       role: u.role,
       me: u.id === s.user.id,
     }))
