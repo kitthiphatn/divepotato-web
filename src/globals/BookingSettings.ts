@@ -2,6 +2,7 @@ import type { GlobalConfig } from 'payload'
 
 import { adminField, adminOnly } from '../access/roles'
 import { GROUPS } from '../collections/groups'
+import { revalidateSite } from '../lib/revalidate'
 
 // Booking and payment settings. Admin only; the payment/LINE fields are stored for P2 and are
 // not used by any integration yet.
@@ -10,6 +11,8 @@ export const BookingSettings: GlobalConfig = {
   label: { th: 'ตั้งค่าการจองและชำระเงิน', en: 'Booking settings' },
   admin: { group: GROUPS.bookings },
   access: { read: adminOnly, update: adminOnly },
+  // The deposit % and cancellation policy show on the public trip and course pages
+  hooks: { afterChange: [revalidateSite] },
   fields: [
     {
       type: 'row',
