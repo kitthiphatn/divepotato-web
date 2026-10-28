@@ -139,7 +139,6 @@ export const Count = ({ s, max }: { s: string; max: number }) => (
 
 // ---------- Website sub-tabs ----------
 
-
 const WEB_TAB_LABEL: Record<WebTab, [string, string, string]> = {
   slides: ['สไลด์หน้าแรก', 'Home slides', 'image'],
   home: ['หน้าแรก', 'Home page', 'globe'],

@@ -37,8 +37,7 @@ export function SiteInfoForm({
   const [tl, setTl] = useState<Loc>(lang)
   const media = useLibrary(library)
 
-  const setC = (k: keyof C, x: string) =>
-    setV((o) => ({ ...o, contact: { ...o.contact, [k]: x } }))
+  const setC = (k: keyof C, x: string) => setV((o) => ({ ...o, contact: { ...o.contact, [k]: x } }))
   const setCLoc = (k: 'hours' | 'address', x: string) =>
     setV((o) => ({ ...o, contact: { ...o.contact, [k]: { ...o.contact[k], [tl]: x } } }))
   const setHero = (k: 'title' | 'subtitle', x: string) =>
@@ -79,7 +78,10 @@ export function SiteInfoForm({
           <Section
             no={1}
             title={L('ชื่อร้านและโลโก้', 'Name & logo')}
-            hint={L('แสดงบนแถบเมนู แท็บเบราว์เซอร์ และท้ายเว็บ', 'Shown in the menu bar, browser tab and footer')}
+            hint={L(
+              'แสดงบนแถบเมนู แท็บเบราว์เซอร์ และท้ายเว็บ',
+              'Shown in the menu bar, browser tab and footer',
+            )}
           >
             <LocTabs tl={tl} onChange={setTl} />
             <label className="field">
@@ -122,7 +124,10 @@ export function SiteInfoForm({
           <Section
             no={2}
             title={L('ช่องทางติดต่อ', 'Contact')}
-            hint={L('ลูกค้าเห็นในหน้าติดต่อและท้ายเว็บ', 'Shown on the contact page and in the footer')}
+            hint={L(
+              'ลูกค้าเห็นในหน้าติดต่อและท้ายเว็บ',
+              'Shown on the contact page and in the footer',
+            )}
           >
             <div className="f3">
               <label className="field">
@@ -170,7 +175,10 @@ export function SiteInfoForm({
           <Section
             no={3}
             title={L('โซเชียลมีเดีย', 'Social media')}
-            hint={L('เว้นว่างช่องที่ไม่ใช้ · ลิงก์เต็ม https://', 'Leave unused ones empty · full https:// links')}
+            hint={L(
+              'เว้นว่างช่องที่ไม่ใช้ · ลิงก์เต็ม https://',
+              'Leave unused ones empty · full https:// links',
+            )}
           >
             <div className="f2">
               {SOCIALS.map(([k, label, ph]) => (

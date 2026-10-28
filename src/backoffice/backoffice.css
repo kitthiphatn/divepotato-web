@@ -5020,3 +5020,250 @@ select.inp {
     grid-column: 3;
   }
 }
+
+/* ===== popup ===== */
+.hrow.on {
+  border-color: var(--y);
+}
+.hrow .hh b {
+  font-weight: 600;
+}
+.popimgs {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 0 16px;
+}
+.popimgs .covpick .cvb {
+  width: 180px;
+}
+.popimgs .covpick .cvb.r-tall {
+  width: 64px;
+}
+@media (max-width: 760px) {
+  .popimgs {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+.poppv {
+  position: relative;
+  border-radius: var(--r);
+  overflow: hidden;
+  background: #f5f5f7;
+  aspect-ratio: 16/10;
+  display: grid;
+  place-items: center;
+}
+.poppv.phone {
+  aspect-ratio: 9/16;
+  max-width: 240px;
+  margin: 0 auto;
+  border: 6px solid #1d1d1f;
+  border-radius: 28px;
+}
+.poppv .site {
+  position: absolute;
+  inset: 0;
+  padding: 14px;
+  display: grid;
+  gap: 8px;
+  align-content: start;
+}
+.poppv .site span {
+  height: 10px;
+  border-radius: 6px;
+  background: #e5e5ea;
+}
+.poppv .site span:first-child {
+  height: 60px;
+}
+.poppv::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.55);
+}
+.poppv.off .pbox {
+  opacity: 0.35;
+}
+.poppv .pbox {
+  position: relative;
+  z-index: 1;
+  width: 82%;
+}
+.poppv.phone .pbox {
+  width: 88%;
+}
+.poppv .pbox.framed {
+  background: #fff;
+  padding: 6px 6px 4px;
+  border-radius: 12px;
+}
+.poppv .pimg {
+  aspect-ratio: 16/9;
+  border-radius: 8px;
+  overflow: hidden;
+  background: #2c2c2e;
+}
+.poppv .pbox.tall .pimg {
+  aspect-ratio: 9/16;
+}
+.poppv .pimg img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.poppv .pimg .noimg {
+  background: #2c2c2e;
+  color: #8e8e93;
+  height: 100%;
+}
+.poppv .px {
+  position: absolute;
+  right: -8px;
+  top: -8px;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: #fff;
+  color: #0a0a0a;
+  display: grid;
+  place-items: center;
+  z-index: 2;
+}
+.poppv .px svg.i {
+  width: 12px;
+  height: 12px;
+}
+.poppv .pdots {
+  display: flex;
+  justify-content: center;
+  gap: 5px;
+  padding: 6px 0 2px;
+}
+.poppv .pdots button {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #c7c7cc;
+}
+.poppv .pbox:not(.framed) .pdots button {
+  background: rgba(255, 255, 255, 0.5);
+}
+.poppv .pdots button.on {
+  background: var(--y);
+  width: 16px;
+  border-radius: 3px;
+}
+
+/* ===== cookie banner preview ===== */
+.ckpv .ck {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  background: #fff;
+  color: #1d1d1f;
+  padding: 14px 16px;
+  font-size: 13px;
+  border-top: 1px solid var(--ln);
+}
+.ckpv .ck p {
+  flex: 1;
+  min-width: 0;
+}
+.ckpv .ck .btn {
+  pointer-events: none;
+  flex: none;
+}
+
+/* ===== media library ===== */
+.mlib {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(170px, 1fr));
+  gap: 14px;
+}
+.mlib > button {
+  background: var(--card);
+  border-radius: var(--rs);
+  box-shadow: var(--sh);
+  padding: 8px 8px 10px;
+  text-align: left;
+  min-width: 0;
+  transition: transform 0.15s;
+}
+.mlib > button:hover {
+  transform: translateY(-2px);
+}
+.mlib .th {
+  display: grid;
+  place-items: center;
+  aspect-ratio: 4/3;
+  border-radius: 10px;
+  overflow: hidden;
+  background: var(--hov);
+  color: var(--mu);
+  margin-bottom: 8px;
+}
+.mlib .th img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.mlib b,
+.mlib small {
+  display: block;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  padding: 0 4px;
+}
+.mlib b {
+  font-size: 13px;
+  font-weight: 500;
+}
+.mlib small {
+  font-size: 12px;
+  color: var(--mu);
+}
+.mdet {
+  display: grid;
+  grid-template-columns: 260px minmax(0, 1fr);
+  gap: 20px;
+  align-items: start;
+}
+.mdet .big {
+  border-radius: 14px;
+  overflow: hidden;
+  background: var(--hov);
+  display: grid;
+  place-items: center;
+  min-height: 160px;
+}
+.mdet .big img {
+  width: 100%;
+  max-height: 340px;
+  object-fit: contain;
+}
+.mdet .fname {
+  overflow-wrap: anywhere;
+}
+.mdel {
+  margin-top: 14px;
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+}
+.mdel ul {
+  margin: 6px 0 0 18px;
+}
+.mdel a {
+  text-decoration: underline;
+}
+@media (max-width: 760px) {
+  .mlib {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+  }
+  .mdet {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}

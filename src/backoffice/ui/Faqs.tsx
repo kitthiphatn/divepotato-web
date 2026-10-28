@@ -174,7 +174,10 @@ export function FaqManager({ lang, faqs }: { lang: Lang; faqs: FaqRow[] }) {
         </div>
         <p className="hint" style={{ padding: '14px 22px' }}>
           {cat === 'all'
-            ? L('ใช้ลูกศรเพื่อเรียงลำดับ แตะคำถามเพื่อแก้ไข', 'Use the arrows to reorder; tap a FAQ to edit it')
+            ? L(
+                'ใช้ลูกศรเพื่อเรียงลำดับ แตะคำถามเพื่อแก้ไข',
+                'Use the arrows to reorder; tap a FAQ to edit it',
+              )
             : L('เลือก "ทั้งหมด" เพื่อเรียงลำดับ', 'Choose "All" to reorder')}
         </p>
       </div>

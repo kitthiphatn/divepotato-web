@@ -8,6 +8,9 @@ import { requireUser, type Session } from '@/backoffice/server'
 import { lexicalToBlocks, newBlock } from '@/backoffice/blocks'
 import { AboutEditor } from '@/backoffice/ui/AboutEditor'
 import { FaqManager, type FaqRow } from '@/backoffice/ui/Faqs'
+import { CookieForm } from '@/backoffice/ui/CookieForm'
+import { MediaLibrary, type LibraryItem } from '@/backoffice/ui/MediaLibrary'
+import { PopupEditor } from '@/backoffice/ui/PopupEditor'
 import { HomeSectionsForm } from '@/backoffice/ui/HomeSections'
 import { SiteInfoForm } from '@/backoffice/ui/SiteInfo'
 import { FAQ_CATS, SERVICE_ICON_KEYS } from '@/backoffice/website'
@@ -36,6 +39,12 @@ export default async function WebsitePage({
       return <AboutTab s={s} />
     case 'faq':
       return <FaqTab s={s} />
+    case 'popup':
+      return <PopupTab s={s} />
+    case 'cookie':
+      return <CookieTab s={s} />
+    case 'media':
+      return <MediaTab s={s} />
     default:
       return <SlidesTab s={s} tab={tab === 'articles' || tab === 'ann' ? tab : 'slides'} />
   }
@@ -224,4 +233,81 @@ async function FaqTab({ s }: { s: Session }) {
   // Remount with fresh rows after a save (the list keeps its own copy for reordering)
   const version = th.docs.map((d) => `${d.id}:${d.updatedAt}`).join('|')
   return <FaqManager key={version} lang={s.lang} faqs={faqs} />
+}
+
+// An instant as a datetime-local value in shop time (UTC+7, no daylight saving)
+const toShopInput = (iso?: string | null) =>
+  iso ? new Date(Date.parse(iso) + 7 * 3600e3).toISOString().slice(0, 16) : ''
+
+async function PopupTab({ s }: { s: Session }) {
+  const [th, en, library] = await Promise.all([
+    s.payload.findGlobal({ slug: 'popup', ...loc('th'), ...s.as }),
+    s.payload.findGlobal({ slug: 'popup', ...loc('en'), ...s.as }),
+    mediaLibrary(s),
+  ])
+  const enRows = new Map((en.slides ?? []).map((r) => [r.id, r]))
+  return (
+    <PopupEditor
+      lang={s.lang}
+      library={library}
+      value={{
+        enabled: Boolean(th.enabled),
+        frequency: th.frequency === 'session' ? 'session' : 'day',
+        startsAt: toShopInput(th.startsAt),
+        endsAt: toShopInput(th.endsAt),
+        framed: th.framed !== false,
+        autoplay: Boolean(th.autoplay),
+        autoplaySeconds: th.autoplaySeconds ?? 5,
+        slides: (th.slides ?? []).map((r) => {
+          const e = r.id ? enRows.get(r.id) : undefined
+          return {
+            id: r.id ?? null,
+            image: { th: relId(r.image), en: relId(e?.image) },
+            mobileImage: { th: relId(r.mobileImage), en: relId(e?.mobileImage) },
+            link: r.link ?? '',
+          }
+        }),
+      }}
+    />
+  )
+}
+
+async function CookieTab({ s }: { s: Session }) {
+  const [th, en] = await Promise.all([
+    s.payload.findGlobal({ slug: 'cookie-consent', ...loc('th'), ...s.as }),
+    s.payload.findGlobal({ slug: 'cookie-consent', ...loc('en'), ...s.as }),
+  ])
+  return (
+    <CookieForm
+      lang={s.lang}
+      value={{
+        message: { th: th.message ?? '', en: en.message ?? '' },
+        policyUrl: th.policyUrl ?? '',
+      }}
+    />
+  )
+}
+
+async function MediaTab({ s }: { s: Session }) {
+  const opts = { sort: '-createdAt', limit: 1000, depth: 0, ...s.as }
+  const [th, en] = await Promise.all([
+    s.payload.find({ collection: 'media', ...opts, ...loc('th') }),
+    s.payload.find({ collection: 'media', ...opts, ...loc('en') }),
+  ])
+  const enAlt = new Map(en.docs.map((d) => [d.id, d.alt ?? '']))
+  const items: LibraryItem[] = th.docs
+    .filter((m) => m.url)
+    .map((m) => ({
+      id: m.id,
+      url: mediaUrl(m)!,
+      filename: m.filename ?? '',
+      altTh: m.alt ?? '',
+      altEn: enAlt.get(m.id) ?? '',
+      mimeType: m.mimeType ?? '',
+      filesize: m.filesize ?? 0,
+      width: m.width ?? null,
+      height: m.height ?? null,
+      createdAt: m.createdAt,
+    }))
+  return <MediaLibrary lang={s.lang} items={items} canDelete={s.role === 'admin'} />
 }

@@ -70,7 +70,10 @@ export function AboutEditor({
       <WebsiteHead
         lang={lang}
         tab="about"
-        lede={L('หน้าเกี่ยวกับเรา เรื่องราวและตัวเลขของร้าน', 'The About page: your story and figures')}
+        lede={L(
+          'หน้าเกี่ยวกับเรา เรื่องราวและตัวเลขของร้าน',
+          'The About page: your story and figures',
+        )}
         acts={btn()}
       />
       <div className="edit art">
@@ -269,9 +272,7 @@ export function AboutEditor({
               )}
             </div>
             <div className="bd">
-              <h1>
-                {v.title[tl] || v.title.th || (tl === 'en' ? 'About us' : 'เกี่ยวกับเรา')}
-              </h1>
+              <h1>{v.title[tl] || v.title.th || (tl === 'en' ? 'About us' : 'เกี่ยวกับเรา')}</h1>
               {v.intro[tl] && <p className="lead">{v.intro[tl]}</p>}
               {v.stats.length > 0 && (
                 <div className="statpv">

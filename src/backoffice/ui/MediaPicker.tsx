@@ -46,19 +46,10 @@ export function MediaPicker({
   hint?: string
 }) {
   const L = translator(lang)
-  const toast = useToast()
-  const [pending, start] = useTransition()
   const [q, setQ] = useState('')
-  const [draft, setDraft] = useState<Draft | null>(null)
+  const up = useUpload(lang)
+  const { draft, choose } = up
   const fileRef = useRef<HTMLInputElement>(null)
-
-  const preview = draft?.preview
-  useEffect(
-    () => () => {
-      if (preview) URL.revokeObjectURL(preview)
-    },
-    [preview],
-  )
 
   const needle = q.trim().toLowerCase()
   const shown = needle
@@ -76,44 +67,16 @@ export function MediaPicker({
     }
   }
 
-  const choose = (file: File | undefined) => {
-    if (!file) return
-    if (!file.type.startsWith('image/')) {
-      toast(L('เลือกไฟล์รูปภาพ', 'Choose an image file'), false)
-      return
-    }
-    if (file.size > MAX_MB * 1024 * 1024) {
-      toast(L(`ไฟล์ใหญ่เกิน ${MAX_MB} MB`, `The file is larger than ${MAX_MB} MB`), false)
-      return
-    }
-    const base = file.name.replace(/\.[^.]+$/, '').replace(/[-_]+/g, ' ')
-    setDraft({ file, preview: URL.createObjectURL(file), altTh: '', altEn: base })
-  }
-
-  const upload = () => {
-    if (!draft) return
-    if (!draft.altTh.trim()) {
-      toast(L('ใส่คำอธิบายรูปภาษาไทย', 'Enter the Thai alt text'), false)
-      return
-    }
-    const form = new FormData()
-    form.set('file', draft.file)
-    form.set('altTh', draft.altTh)
-    form.set('altEn', draft.altEn)
-    start(async () => {
-      const r = await uploadMediaAction(form)
-      toast(r.message, r.ok)
-      if (!r.ok || !r.item) return
-      onUploaded(r.item)
-      setDraft(null)
+  const upload = () =>
+    up.upload((item) => {
+      onUploaded(item)
       setQ('')
-      if (multiple) onChange([...selected, r.item.id])
+      if (multiple) onChange([...selected, item.id])
       else {
-        onChange([r.item.id])
+        onChange([item.id])
         onClose()
       }
     })
-  }
 
   return (
     <Modal onClose={onClose} wide label={L('คลังรูป', 'Media')}>
@@ -126,58 +89,7 @@ export function MediaPicker({
       </p>
 
       {draft ? (
-        <div className="upbox">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src={draft.preview} alt="" />
-          <div>
-            <p className="small muted">
-              {draft.file.name} ·{' '}
-              {draft.file.size < 1024 * 1024
-                ? `${Math.max(1, Math.round(draft.file.size / 1024))} KB`
-                : `${(draft.file.size / 1024 / 1024).toFixed(1)} MB`}
-            </p>
-            <label className="field">
-              <span>{L('คำอธิบายรูป (ไทย) *', 'Alt text (Thai) *')}</span>
-              <input
-                className="inp"
-                value={draft.altTh}
-                maxLength={200}
-                autoFocus
-                placeholder={L('เช่น นักดำน้ำกับฝูงปลา', 'e.g. a diver with a school of fish')}
-                onChange={(e) => setDraft((d) => d && { ...d, altTh: e.target.value })}
-              />
-            </label>
-            <label className="field">
-              <span>{L('คำอธิบายรูป (อังกฤษ)', 'Alt text (English)')}</span>
-              <input
-                className="inp"
-                value={draft.altEn}
-                maxLength={200}
-                onChange={(e) => setDraft((d) => d && { ...d, altEn: e.target.value })}
-              />
-            </label>
-            <p className="hint">
-              {L(
-                'ช่วยให้ Google และผู้พิการทางสายตาเข้าใจรูป',
-                'Helps Google and screen-reader users understand the photo',
-              )}
-            </p>
-          </div>
-          <div className="acts">
-            <button
-              className="btn o"
-              type="button"
-              disabled={pending}
-              onClick={() => setDraft(null)}
-            >
-              {L('ยกเลิก', 'Cancel')}
-            </button>
-            <button className="btn y" type="button" disabled={pending} onClick={upload}>
-              <Icon name="upload" />
-              {pending ? L('กำลังอัปโหลด…', 'Uploading…') : L('อัปโหลด', 'Upload')}
-            </button>
-          </div>
-        </div>
+        <UploadBox lang={lang} up={up} onUpload={upload} />
       ) : (
         <>
           <div className="mtools">
@@ -244,5 +156,119 @@ export function MediaPicker({
         </>
       )}
     </Modal>
+  )
+}
+
+// Upload state shared by the picker and the media library page: the chosen file with its
+// preview, the alt text in Thai and English, and the upload through the server action
+export function useUpload(lang: Lang) {
+  const L = translator(lang)
+  const toast = useToast()
+  const [pending, start] = useTransition()
+  const [draft, setDraft] = useState<Draft | null>(null)
+  const preview = draft?.preview
+  useEffect(
+    () => () => {
+      if (preview) URL.revokeObjectURL(preview)
+    },
+    [preview],
+  )
+  const choose = (file: File | undefined) => {
+    if (!file) return
+    if (!file.type.startsWith('image/')) {
+      toast(L('เลือกไฟล์รูปภาพ', 'Choose an image file'), false)
+      return
+    }
+    if (file.size > MAX_MB * 1024 * 1024) {
+      toast(L(`ไฟล์ใหญ่เกิน ${MAX_MB} MB`, `The file is larger than ${MAX_MB} MB`), false)
+      return
+    }
+    const base = file.name.replace(/\.[^.]+$/, '').replace(/[-_]+/g, ' ')
+    setDraft({ file, preview: URL.createObjectURL(file), altTh: '', altEn: base })
+  }
+
+  const upload = (onDone: (m: MediaItem) => void) => {
+    if (!draft) return
+    if (!draft.altTh.trim()) {
+      toast(L('ใส่คำอธิบายรูปภาษาไทย', 'Enter the Thai alt text'), false)
+      return
+    }
+    const form = new FormData()
+    form.set('file', draft.file)
+    form.set('altTh', draft.altTh)
+    form.set('altEn', draft.altEn)
+    start(async () => {
+      const r = await uploadMediaAction(form)
+      toast(r.message, r.ok)
+      if (!r.ok || !r.item) return
+      setDraft(null)
+      onDone(r.item)
+    })
+  }
+
+  return { draft, setDraft, choose, upload, pending }
+}
+
+export function UploadBox({
+  lang,
+  up,
+  onUpload,
+}: {
+  lang: Lang
+  up: ReturnType<typeof useUpload>
+  onUpload: () => void
+}) {
+  const L = translator(lang)
+  const { draft, setDraft, pending } = up
+  if (!draft) return null
+  const upload = onUpload
+  return (
+    <div className="upbox">
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img src={draft.preview} alt="" />
+      <div>
+        <p className="small muted">
+          {draft.file.name} ·{' '}
+          {draft.file.size < 1024 * 1024
+            ? `${Math.max(1, Math.round(draft.file.size / 1024))} KB`
+            : `${(draft.file.size / 1024 / 1024).toFixed(1)} MB`}
+        </p>
+        <label className="field">
+          <span>{L('คำอธิบายรูป (ไทย) *', 'Alt text (Thai) *')}</span>
+          <input
+            className="inp"
+            value={draft.altTh}
+            maxLength={200}
+            autoFocus
+            placeholder={L('เช่น นักดำน้ำกับฝูงปลา', 'e.g. a diver with a school of fish')}
+            onChange={(e) => setDraft((d) => d && { ...d, altTh: e.target.value })}
+          />
+        </label>
+        <label className="field">
+          <span>{L('คำอธิบายรูป (อังกฤษ)', 'Alt text (English)')}</span>
+          <input
+            className="inp"
+            value={draft.altEn}
+            maxLength={200}
+            onChange={(e) => setDraft((d) => d && { ...d, altEn: e.target.value })}
+          />
+        </label>
+        <p className="hint">
+          {L(
+            'ช่วยให้ Google และผู้พิการทางสายตาเข้าใจรูป',
+            'Helps Google and screen-reader users understand the photo',
+          )}
+        </p>
+      </div>
+      <div className="acts">
+        <button className="btn o" type="button" disabled={pending} onClick={() => setDraft(null)}>
+          {L('ยกเลิก', 'Cancel')}
+        </button>
+        <button className="btn y" type="button" disabled={pending} onClick={upload}>
+          <Icon name="upload" />
+          {pending ? L('กำลังอัปโหลด…', 'Uploading…') : L('อัปโหลด', 'Upload')}
+        </button>
+      </div>
+    </div>
   )
 }

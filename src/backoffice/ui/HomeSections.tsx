@@ -57,7 +57,13 @@ export function HomeSectionsForm({ lang, value }: { lang: Lang; value: HomeSecti
   const toggles: [keyof HomeSectionsInput, string, string, string, string][] = [
     ['showTrips', 'แสดงทริป', 'Show trips', 'การ์ดทริปที่เปิดขาย', 'Trip cards on sale'],
     ['showCourses', 'แสดงคอร์สเรียน', 'Show courses', 'คอร์ส PADI', 'PADI courses'],
-    ['showNews', 'แสดงบทความล่าสุด', 'Show latest posts', 'บทความ 3 เรื่องล่าสุด', 'The 3 newest articles'],
+    [
+      'showNews',
+      'แสดงบทความล่าสุด',
+      'Show latest posts',
+      'บทความ 3 เรื่องล่าสุด',
+      'The 3 newest articles',
+    ],
     [
       'showFaq',
       'แสดงคำถามที่พบบ่อย',
