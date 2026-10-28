@@ -203,13 +203,15 @@ export default async function TodayPage() {
         ? L('สวัสดีตอนบ่าย', 'Good afternoon')
         : L('สวัสดีตอนเย็น', 'Good evening')
   const first = (s.user.name || s.user.email).split(/[\s@]/)[0]
+  // "คุณสมชาย" for a Thai name, "คุณ Dive" for a name in another script
+  const khun = /^[\u0E00-\u0E7F]/.test(first) ? `คุณ${first}` : `คุณ ${first}`
 
   return (
     <>
       <div className="ph">
         <div>
           <span className="eb">{longDate(today, lang)}</span>
-          <h1>{L(`${hello} คุณ${first}`, `${hello}, ${first}`)}</h1>
+          <h1>{L(`${hello} ${khun}`, `${hello}, ${first}`)}</h1>
           <p className="lede">
             {staff
               ? L(
