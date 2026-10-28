@@ -1,6 +1,6 @@
 // Plain-text editing of Lexical rich text: one paragraph per line. Used where the backoffice
-// shows a simple textarea (cancellation policy, trip description). Formatting such as bold or
-// links is edited in the full admin (/admin).
+// shows a plain textarea (cancellation policy). Articles and trip descriptions use the block
+// editor in blocks.ts instead, which keeps headings, lists, bold, italic, links and photos.
 type Node = { type?: string; text?: string; children?: Node[] }
 
 export function lexicalToText(value: unknown): string {

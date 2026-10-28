@@ -11,8 +11,9 @@ import {
 } from '../actions/website'
 import type { MediaItem } from '../data'
 import { fd } from '../format'
-import { translator, type Lang } from '../i18n'
+import { pair, POST_CAT_LABEL, translator, type Lang, type PostCategory } from '../i18n'
 import { Icon } from '../icons'
+import { BO } from '../nav'
 import { MediaPicker, useLibrary } from './MediaPicker'
 import { useToast } from './Toast'
 
@@ -25,13 +26,6 @@ export type ArticleRow = {
   date: string
   published: boolean
   cover: string | null
-}
-
-const CATEGORY: Record<string, [string, string]> = {
-  news: ['ข่าวสาร', 'News'],
-  promotion: ['โปรโมชั่น', 'Promotion'],
-  travel: ['รีวิวทริป', 'Trip report'],
-  tips: ['เกร็ดความรู้ดำน้ำ', 'Diving tips'],
 }
 
 const blank = (): SlideInput => ({
@@ -116,7 +110,7 @@ export function WebsiteEditor({
         </div>
         <div className="acts">
           {tab === 'articles' ? (
-            <Link className="btn y" href="/admin/collections/posts/create">
+            <Link className="btn y" href={`${BO}/website/articles/new`}>
               <Icon name="plus" />
               {L('เขียนบทความใหม่', 'New article')}
             </Link>
@@ -343,7 +337,7 @@ export function WebsiteEditor({
               <div className="empty">{L('ยังไม่มีบทความ', 'No articles yet')}</div>
             )}
             {articles.map((a) => (
-              <Link key={a.id} className="row arow" href={`/admin/collections/posts/${a.id}`}>
+              <Link key={a.id} className="row arow" href={`${BO}/website/articles/${a.id}`}>
                 {a.cover ? (
                   // eslint-disable-next-line @next/next/no-img-element
                   <img src={a.cover} alt="" />
@@ -356,7 +350,7 @@ export function WebsiteEditor({
                   <b>{a.title}</b>
                 </span>
                 <span className="hide-m muted">
-                  {CATEGORY[a.category] ? L(...CATEGORY[a.category]) : a.category}
+                  {pair(lang, POST_CAT_LABEL[a.category as PostCategory], a.category)}
                 </span>
                 <span className="amt">
                   <small>{a.date ? fd(a.date, lang) : ''}</small>
@@ -376,8 +370,8 @@ export function WebsiteEditor({
           </div>
           <p className="hint" style={{ padding: '14px 22px' }}>
             {L(
-              'บทความเขียนและแก้ไขในหลังบ้านแบบเต็ม (มีตัวแก้ไขข้อความ รูป และตั้งเวลาเผยแพร่)',
-              'Articles are written in the full admin (rich text, images and scheduling)',
+              'แตะบทความเพื่อแก้ไข ตั้งวันที่ในอนาคตเพื่อให้บทความขึ้นเว็บเองเมื่อถึงวัน',
+              'Tap an article to edit it; a future date publishes it on that day',
             )}
           </p>
         </div>

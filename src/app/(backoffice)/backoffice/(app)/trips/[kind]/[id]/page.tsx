@@ -3,7 +3,7 @@ import { notFound } from 'next/navigation'
 
 import type { OfferingInput } from '@/backoffice/actions/catalog'
 import { bookingDefaults, mediaLibrary } from '@/backoffice/data'
-import { lexicalToText } from '@/backoffice/richtext'
+import { lexicalToBlocks } from '@/backoffice/blocks'
 import { requireUser } from '@/backoffice/server'
 import { TripEditor } from '@/backoffice/ui/TripEditor'
 
@@ -34,7 +34,7 @@ export default async function TripEditPage({
     slug: '',
     title: { th: '', en: '' },
     summary: { th: '', en: '' },
-    description: { th: '', en: '' },
+    description: { th: [], en: [] },
     descriptionDirty: { th: false, en: false },
     price: 0,
     type: 'daytrip',
@@ -61,6 +61,8 @@ export default async function TripEditPage({
         .catch(() => null)
     const [th, en] = await Promise.all([read('th'), read('en')])
     if (!th || !en) notFound()
+    const dth = lexicalToBlocks(th.description)
+    const den = lexicalToBlocks(en.description)
     const enRows = new Map(('itinerary' in en ? (en.itinerary ?? []) : []).map((r) => [r.id, r]))
     value = {
       ...value,
@@ -69,7 +71,8 @@ export default async function TripEditPage({
       slug: th.slug,
       title: { th: th.title ?? '', en: en.title ?? '' },
       summary: { th: th.summary ?? '', en: en.summary ?? '' },
-      description: { th: lexicalToText(th.description), en: lexicalToText(en.description) },
+      description: { th: dth.blocks, en: den.blocks },
+      descriptionLossy: { th: dth.lossy, en: den.lossy },
       price: th.price ?? 0,
       gallery: relIds(th.gallery),
     }

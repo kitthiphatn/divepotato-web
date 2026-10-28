@@ -5,7 +5,7 @@
 import { revalidatePath } from 'next/cache'
 
 import { slugify } from '../format'
-import { textToLexical } from '../richtext'
+import { blocksToLexical, type Block } from '../blocks'
 import { BO } from '../nav'
 import { actionUser, errorMessage, isSession, type ActionResult } from '../server'
 
@@ -17,8 +17,10 @@ export type OfferingInput = {
   slug: string
   title: Pair
   summary: Pair
-  description: Pair
+  description: { th: Block[]; en: Block[] }
   descriptionDirty: { th: boolean; en: boolean }
+  // The stored description has formatting the simple editor can't show (display only)
+  descriptionLossy?: { th: boolean; en: boolean }
   price: number
   // trips
   type?: 'daytrip' | 'liveaboard' | 'overseas'
@@ -45,7 +47,9 @@ export async function saveOfferingAction(v: OfferingInput): Promise<ActionResult
     `${v.kind}-${Math.random().toString(36).slice(2, 8)}`
   const status = v.published ? ('published' as const) : ('draft' as const)
   const desc = (locale: 'th' | 'en') =>
-    v.descriptionDirty[locale] ? { description: textToLexical(v.description[locale]) } : {}
+    v.descriptionDirty[locale]
+      ? { description: blocksToLexical(v.description[locale]) as never }
+      : {}
   const rows = v.itinerary ?? []
 
   try {

@@ -96,5 +96,14 @@ export const DEP_STATUS_LABEL: Record<string, Pair> = {
   closed: ['ปิดรับจอง', 'Closed'],
 }
 
+export const POST_CATEGORIES = ['news', 'promotion', 'travel', 'tips'] as const
+export type PostCategory = (typeof POST_CATEGORIES)[number]
+export const POST_CAT_LABEL: Record<PostCategory, Pair> = {
+  news: ['ข่าวสาร', 'News'],
+  promotion: ['โปรโมชั่น', 'Promotion'],
+  travel: ['รีวิวทริป', 'Trip report'],
+  tips: ['เกร็ดความรู้ดำน้ำ', 'Diving tips'],
+}
+
 export const pair = (lang: Lang, p: Pair | undefined, fallback = '') =>
   p ? (lang === 'en' ? p[1] : p[0]) : fallback

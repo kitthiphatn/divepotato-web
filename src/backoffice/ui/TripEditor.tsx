@@ -9,6 +9,7 @@ import { money } from '../format'
 import { CAT_LABEL, CERT_LABEL, pair, translator, type Lang } from '../i18n'
 import { Icon } from '../icons'
 import { BO } from '../nav'
+import { BlockEditor } from './BlockEditor'
 import { MediaPicker, useLibrary } from './MediaPicker'
 import { useToast } from './Toast'
 
@@ -47,12 +48,8 @@ export function TripEditor({
   const en = tl === 'en'
 
   const patch = (p: Partial<OfferingInput>) => setV((o) => ({ ...o, ...p }))
-  const setLoc = (k: 'title' | 'summary' | 'description', text: string) =>
-    setV((o) => ({
-      ...o,
-      [k]: { ...o[k], [tl]: text },
-      ...(k === 'description' ? { descriptionDirty: { ...o.descriptionDirty, [tl]: true } } : {}),
-    }))
+  const setLoc = (k: 'title' | 'summary', text: string) =>
+    setV((o) => ({ ...o, [k]: { ...o[k], [tl]: text } }))
   const setRow = (i: number, k: 'title' | 'text', text: string) =>
     patch({ itinerary: rows.map((r, j) => (j === i ? { ...r, [k]: { ...r[k], [tl]: text } } : r)) })
 
@@ -60,7 +57,9 @@ export function TripEditor({
     start(async () => {
       const r = await saveOfferingAction(v)
       toast(r.message, r.ok)
-      if (r.ok && !v.id && r.redirect) router.replace(r.redirect)
+      if (!r.ok) return
+      setV((o) => ({ ...o, descriptionDirty: { th: false, en: false } }))
+      if (!v.id && r.redirect) router.replace(r.redirect)
     })
 
   const heading =
@@ -241,28 +240,34 @@ export function TripEditor({
                 onChange={(e) => setLoc('summary', e.target.value)}
               />
             </label>
-            <label className="field">
+            <span className="field" style={{ marginBottom: 6 }}>
               <span>
                 {L('รายละเอียด', 'Description')} ({tl.toUpperCase()})
               </span>
-              <textarea
-                className="inp"
-                rows={5}
-                value={v.description[tl]}
-                onChange={(e) => setLoc('description', e.target.value)}
-              />
-            </label>
-            <p className="hint" style={{ marginTop: 8 }}>
-              {L(
-                'ข้อความธรรมดา บรรทัดละย่อหน้า · ตัวหนาหรือลิงก์แก้ได้ใน',
-                'Plain text, one paragraph per line · bold or links in',
-              )}{' '}
-              <Link
-                href={`/admin/collections/${isTrip ? 'trips' : 'courses'}${v.id ? `/${v.id}` : ''}`}
-              >
-                {L('หลังบ้านแบบเต็ม', 'the full admin')}
-              </Link>
-            </p>
+            </span>
+            {v.descriptionLossy?.[tl] && !v.descriptionDirty[tl] && (
+              <p className="banner amb small" style={{ marginBottom: 10 }}>
+                <Icon name="alert" />
+                {L(
+                  'รายละเอียดนี้มีรูปแบบพิเศษบางอย่าง ถ้าแก้ ข้อความจะยังอยู่ครบแต่รูปแบบพิเศษจะถูกปรับให้เรียบง่าย',
+                  'This description has some special formatting. Editing it keeps all text but simplifies that formatting.',
+                )}
+              </p>
+            )}
+            <BlockEditor
+              key={tl}
+              lang={lang}
+              label={L('ตัวแก้ไขรายละเอียด', 'Description editor')}
+              kinds={['p', 'h3', 'ul', 'ol']}
+              blocks={v.description[tl]}
+              onChange={(blocks) =>
+                setV((o) => ({
+                  ...o,
+                  description: { ...o.description, [tl]: blocks },
+                  descriptionDirty: { ...o.descriptionDirty, [tl]: true },
+                }))
+              }
+            />
           </section>
 
           <section className="card fsec">
