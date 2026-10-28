@@ -4201,3 +4201,60 @@ select.inp {
 .annpv .ab.warn {
   background: #8a1c12;
 }
+
+/* ===== media picker ===== */
+.mtools {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  align-items: center;
+  margin-top: 16px;
+}
+.mtools .search {
+  min-width: 0;
+  flex: 1 1 200px;
+}
+.upbox {
+  display: grid;
+  grid-template-columns: 220px minmax(0, 1fr);
+  gap: 20px;
+  margin-top: 16px;
+  align-items: start;
+}
+.upbox > img {
+  width: 100%;
+  aspect-ratio: 1;
+  object-fit: cover;
+  border-radius: 16px;
+  background: var(--hov);
+}
+.upbox .acts {
+  grid-column: 1 / -1;
+  margin-top: 4px;
+}
+.phgrid .up {
+  display: grid;
+  place-items: center;
+  color: var(--mu);
+  border: 1.5px dashed var(--ln2);
+  font-size: 11px;
+  line-height: 1.2;
+  text-align: center;
+  padding: 4px;
+}
+.phgrid .up svg.i {
+  margin: 0 auto 2px;
+  width: 18px;
+  height: 18px;
+}
+@media (max-width: 760px) {
+  .upbox {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .upbox > img {
+    max-height: 220px;
+  }
+  .mtools .btn {
+    flex: 1 1 100%;
+  }
+}

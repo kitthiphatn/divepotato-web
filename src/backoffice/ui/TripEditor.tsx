@@ -9,7 +9,7 @@ import { money } from '../format'
 import { CAT_LABEL, CERT_LABEL, pair, translator, type Lang } from '../i18n'
 import { Icon } from '../icons'
 import { BO } from '../nav'
-import { Modal } from './Modal'
+import { MediaPicker, useLibrary } from './MediaPicker'
 import { useToast } from './Toast'
 
 import type { MediaItem } from '../data'
@@ -35,7 +35,8 @@ export function TripEditor({
   const [picker, setPicker] = useState(false)
   const isTrip = v.kind === 'trip'
   const rows = v.itinerary ?? []
-  const byId = new Map(library.map((m) => [m.id, m]))
+  const media = useLibrary(library)
+  const byId = media.byId
   const photos = v.gallery.map((id) => byId.get(id)).filter((m): m is MediaItem => Boolean(m))
   const cover = photos[0]
   const pct =
@@ -414,7 +415,7 @@ export function TripEditor({
               <button className="up" type="button" onClick={() => setPicker(true)}>
                 <span>
                   <Icon name="image" />
-                  {L('เลือกจากคลังรูป', 'Pick from media')}
+                  {L('เลือกหรืออัปโหลดรูป', 'Pick or upload')}
                 </span>
               </button>
             </div>
@@ -491,50 +492,20 @@ export function TripEditor({
       </div>
 
       {picker && (
-        <Modal onClose={() => setPicker(false)} wide label={L('คลังรูป', 'Media')}>
-          <h3>{L('เลือกรูปจากคลังรูป', 'Pick photos from media')}</h3>
-          <p className="s">
-            {L(
-              'แตะเพื่อเพิ่มหรือเอาออก รูปแรกคือรูปปก',
-              'Tap to add or remove; the first photo is the cover',
-            )}{' '}
-            ·{' '}
-            <Link href="/admin/collections/media/create">
-              {L('อัปโหลดรูปใหม่', 'Upload a new photo')}
-            </Link>
-          </p>
-          {library.length === 0 && (
-            <p className="muted" style={{ marginTop: 16 }}>
-              {L('ยังไม่มีรูปในคลัง', 'No photos yet')}
-            </p>
+        <MediaPicker
+          lang={lang}
+          multiple
+          library={media.lib}
+          onUploaded={media.add}
+          selected={v.gallery}
+          onChange={(gallery) => patch({ gallery })}
+          onClose={() => setPicker(false)}
+          title={L('เลือกรูปจากคลังรูป', 'Pick photos from media')}
+          hint={L(
+            'แตะเพื่อเพิ่มหรือเอาออก รูปแรกคือรูปปก',
+            'Tap to add or remove; the first photo is the cover',
           )}
-          <div className="mgrid">
-            {library.map((m) => {
-              const on = v.gallery.includes(m.id)
-              return (
-                <button
-                  key={m.id}
-                  type="button"
-                  aria-pressed={on}
-                  title={m.alt}
-                  onClick={() =>
-                    patch({
-                      gallery: on ? v.gallery.filter((x) => x !== m.id) : [...v.gallery, m.id],
-                    })
-                  }
-                >
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src={m.url} alt={m.alt} loading="lazy" />
-                </button>
-              )
-            })}
-          </div>
-          <div className="acts">
-            <button className="btn y" type="button" onClick={() => setPicker(false)}>
-              {L('เสร็จ', 'Done')} · {v.gallery.length}
-            </button>
-          </div>
-        </Modal>
+        />
       )}
     </>
   )

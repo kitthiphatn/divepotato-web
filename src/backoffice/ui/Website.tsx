@@ -13,6 +13,7 @@ import type { MediaItem } from '../data'
 import { fd } from '../format'
 import { translator, type Lang } from '../i18n'
 import { Icon } from '../icons'
+import { MediaPicker, useLibrary } from './MediaPicker'
 import { useToast } from './Toast'
 
 type Loc = 'th' | 'en'
@@ -65,8 +66,16 @@ export function WebsiteEditor({
   const [cur, setCur] = useState(0)
   const [tl, setTl] = useState<Loc>(lang)
   const [ann, setAnn] = useState(announcement)
-  const byId = new Map(library.map((m) => [m.id, m]))
+  const media = useLibrary(library)
+  const byId = media.byId
+  const [picker, setPicker] = useState(false)
   const slide = slides[cur]
+  // Quick picks: the slide's own photo first, then the newest photos
+  const current = slide?.image ? byId.get(slide.image) : undefined
+  const quick = [
+    ...(current ? [current] : []),
+    ...media.lib.filter((m) => m.id !== current?.id),
+  ].slice(0, 9)
 
   const go = (t: Tab) => {
     setTab(t)
@@ -198,7 +207,7 @@ export function WebsiteEditor({
                 <span>{L('รูปภาพ', 'Photo')}</span>
               </span>
               <div className="phgrid">
-                {library.slice(0, 20).map((m) => (
+                {quick.map((m) => (
                   <button
                     key={m.id}
                     type="button"
@@ -210,12 +219,13 @@ export function WebsiteEditor({
                     <img src={m.url} alt={m.alt} loading="lazy" />
                   </button>
                 ))}
+                <button className="up" type="button" onClick={() => setPicker(true)}>
+                  <span>
+                    <Icon name="upload" />
+                    {L('คลังรูป / อัปโหลด', 'All / upload')}
+                  </span>
+                </button>
               </div>
-              <p className="hint" style={{ marginTop: 8 }}>
-                <Link href="/admin/collections/media/create">
-                  {L('อัปโหลดรูปใหม่', 'Upload a new photo')}
-                </Link>
-              </p>
               <div className="tabs" role="tablist">
                 <button type="button" aria-pressed={tl === 'th'} onClick={() => setTl('th')}>
                   ภาษาไทย
@@ -450,6 +460,21 @@ export function WebsiteEditor({
             </div>
           </div>
         </section>
+      )}
+      {picker && slide && (
+        <MediaPicker
+          lang={lang}
+          library={media.lib}
+          onUploaded={media.add}
+          selected={slide.image ? [slide.image] : []}
+          onChange={(ids) => patch({ image: ids[0] ?? null })}
+          onClose={() => setPicker(false)}
+          title={L('รูปสำหรับสไลด์', 'Slide photo')}
+          hint={L(
+            'แนะนำรูปแนวนอน กว้างอย่างน้อย 1600px',
+            'Use a landscape photo, at least 1600px wide',
+          )}
+        />
       )}
     </>
   )

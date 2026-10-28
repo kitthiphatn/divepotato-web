@@ -311,7 +311,7 @@ export function customerStats(customerId: number, all: BookingVM[]) {
 }
 
 // Images in the Media collection, for the photo pickers
-export type MediaItem = { id: number; url: string; alt: string }
+export type MediaItem = { id: number; url: string; alt: string; filename: string }
 export async function mediaLibrary(s: Session): Promise<MediaItem[]> {
   const media = await s.payload.find({
     collection: 'media',
@@ -323,5 +323,5 @@ export async function mediaLibrary(s: Session): Promise<MediaItem[]> {
   })
   return media.docs
     .filter((m) => m.url && (m.mimeType ?? '').startsWith('image/'))
-    .map((m) => ({ id: m.id, url: mediaUrl(m)!, alt: m.alt ?? '' }))
+    .map((m) => ({ id: m.id, url: mediaUrl(m)!, alt: m.alt ?? '', filename: m.filename ?? '' }))
 }
