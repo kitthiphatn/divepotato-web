@@ -17,12 +17,18 @@ npm run dev            # http://localhost:3006 and http://localhost:3006/admin
 
 ### Demo accounts (created by `npm run seed`)
 
-| Role | Email | Password |
-|---|---|---|
-| Admin (ผู้ดูแลระบบ) | `admin@divepotato.local` (or `SEED_ADMIN_EMAIL`) | `divepotato-demo` (or `SEED_ADMIN_PASSWORD`) |
-| Staff (พนักงาน) | `staff@divepotato.local` | `divepotato-demo` |
-| Editor (บรรณาธิการ) | `editor@divepotato.local` | `divepotato-demo` |
-| Guide (ไกด์) | `guide@divepotato.local` | `divepotato-demo` |
+| Role | Username | Email | Password |
+|---|---|---|---|
+| Admin (ผู้ดูแลระบบ) | `admin` | `admin@divepotato.local` (or `SEED_ADMIN_EMAIL`) | `divepotato-demo` (or `SEED_ADMIN_PASSWORD`) |
+| Staff (พนักงาน) | `staff` | `staff@divepotato.local` | `divepotato-demo` |
+| Editor (บรรณาธิการ) | `editor` | `editor@divepotato.local` | `divepotato-demo` |
+| Guide (ไกด์) | `guide` | `guide@divepotato.local` | `divepotato-demo` |
+
+Sign in at `/backoffice` or `/admin` with **either the username or the email**
+(เข้าสู่ระบบด้วยชื่อผู้ใช้หรืออีเมลก็ได้). Usernames are lowercase `a-z`, `0-9` and `. _ -`.
+Running the seed on an older database gives the demo accounts their usernames; the
+`login_with_username` migration gives every existing account a username from its email
+(`noi@shop.com` → `noi`, plus `-<id>` if two would clash), and the email keeps working.
 
 Set `SEED_PHOTOS_DIR` to a folder of the shop's `.webp` photos to add them to Media while seeding.
 All seeded people, prices and dates are sample data.
@@ -67,8 +73,9 @@ so nobody is sent to `/admin`; it stays available for admins only, through "เ�
   (`/backoffice/shop/new`, `/[id]`): TH/EN name and description, brand, category, slug, photos, a
   sizes table (SKU, size, price, stock) and a live product card. Deleting a product is admin-only.
 - **Settings** (admin): deposit %, seat hold minutes, cancellation policy (TH/EN plain text), Omise
-  and LINE keys (stored for phase 2), staff roles, **add staff** (name, email, role, temporary
-  password) and **set a new password** for someone who forgot theirs.
+  and LINE keys (stored for phase 2), staff roles, **add staff** (name, email, username prefilled
+  from the email, role, temporary password), **edit a username** and **set a new password** for
+  someone who forgot theirs.
 
 **Block editor** (articles and trip descriptions): one card per block: paragraph, H2, H3, bullet or
 numbered list (one item per line), quote and photo. Inside the text: `**bold**`, `*italic*` and
