@@ -12,7 +12,7 @@ import { BO } from '../nav'
 import { Modal } from './Modal'
 import { useToast } from './Toast'
 
-type MediaItem = { id: number; url: string; alt: string }
+import type { MediaItem } from '../data'
 type Loc = 'th' | 'en'
 
 export function TripEditor({

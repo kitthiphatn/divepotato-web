@@ -309,3 +309,19 @@ export function customerStats(customerId: number, all: BookingVM[]) {
     suit,
   }
 }
+
+// Images in the Media collection, for the photo pickers
+export type MediaItem = { id: number; url: string; alt: string }
+export async function mediaLibrary(s: Session): Promise<MediaItem[]> {
+  const media = await s.payload.find({
+    collection: 'media',
+    sort: '-createdAt',
+    limit: 300,
+    depth: 0,
+    locale: s.lang,
+    ...s.as,
+  })
+  return media.docs
+    .filter((m) => m.url && (m.mimeType ?? '').startsWith('image/'))
+    .map((m) => ({ id: m.id, url: mediaUrl(m)!, alt: m.alt ?? '' }))
+}

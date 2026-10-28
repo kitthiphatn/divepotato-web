@@ -2,7 +2,7 @@ import type { Metadata } from 'next'
 import { notFound } from 'next/navigation'
 
 import type { OfferingInput } from '@/backoffice/actions/catalog'
-import { bookingDefaults, mediaUrl } from '@/backoffice/data'
+import { bookingDefaults, mediaLibrary } from '@/backoffice/data'
 import { lexicalToText } from '@/backoffice/richtext'
 import { requireUser } from '@/backoffice/server'
 import { TripEditor } from '@/backoffice/ui/TripEditor'
@@ -25,20 +25,7 @@ export default async function TripEditPage({
   if (id !== 'new' && !/^\d+$/.test(id)) notFound()
   const collection = kind === 'trip' ? 'trips' : 'courses'
 
-  const [media, defaults] = await Promise.all([
-    s.payload.find({
-      collection: 'media',
-      sort: '-createdAt',
-      limit: 300,
-      depth: 0,
-      locale: s.lang,
-      ...s.as,
-    }),
-    bookingDefaults(s),
-  ])
-  const library = media.docs
-    .filter((m) => m.url && (m.mimeType ?? '').startsWith('image/'))
-    .map((m) => ({ id: m.id, url: mediaUrl(m)!, alt: m.alt ?? '' }))
+  const [library, defaults] = await Promise.all([mediaLibrary(s), bookingDefaults(s)])
 
   let value: OfferingInput = {
     kind,

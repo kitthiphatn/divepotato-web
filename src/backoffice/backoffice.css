@@ -4186,3 +4186,18 @@ select.inp {
     display: none;
   }
 }
+
+/* website editor extras */
+.slist .addsl {
+  background: transparent;
+  box-shadow: none;
+  border: 2px dashed var(--ln2);
+}
+.slist .noimg svg.i,
+.arow .noimg svg.i {
+  width: 20px;
+  height: 20px;
+}
+.annpv .ab.warn {
+  background: #8a1c12;
+}
