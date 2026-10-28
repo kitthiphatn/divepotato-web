@@ -71,10 +71,7 @@ export async function saveSiteSettingsAction(v: SiteSettingsInput): Promise<Acti
     if (u && !/^https?:\/\//i.test(u))
       return {
         ok: false,
-        message: L(
-          'ลิงก์โซเชียลต้องขึ้นต้นด้วย https://',
-          'Social links must start with https://',
-        ),
+        message: L('ลิงก์โซเชียลต้องขึ้นต้นด้วย https://', 'Social links must start with https://'),
       }
   }
   const c = v.contact
@@ -211,11 +208,17 @@ export async function saveAboutAction(v: AboutInput): Promise<ActionResult> {
   if (v.stats.some((x) => !x.value.trim() || !both(x.label)))
     return {
       ok: false,
-      message: L('ตัวเลขเด่นต้องมีทั้งตัวเลขและคำอธิบาย', 'Each key figure needs a value and a label'),
+      message: L(
+        'ตัวเลขเด่นต้องมีทั้งตัวเลขและคำอธิบาย',
+        'Each key figure needs a value and a label',
+      ),
     }
   for (const l of ['th', 'en'] as const) {
     if (v.seoTitle[l].length > 70)
-      return { ok: false, message: L('หัวข้อ SEO ยาวเกิน 70 ตัวอักษร', 'SEO title is over 70 characters') }
+      return {
+        ok: false,
+        message: L('หัวข้อ SEO ยาวเกิน 70 ตัวอักษร', 'SEO title is over 70 characters'),
+      }
     if (v.seoDescription[l].length > 170)
       return {
         ok: false,
@@ -266,6 +269,135 @@ export async function saveAboutAction(v: AboutInput): Promise<ActionResult> {
       ...s.as,
     })
     return done(L('บันทึกหน้าเกี่ยวกับเราแล้ว', 'About page saved'))
+  } catch (err) {
+    return { ok: false, message: errorMessage(err, L) }
+  }
+}
+
+// ---------- popup ----------
+
+export type PopupInput = {
+  enabled: boolean
+  frequency: 'day' | 'session'
+  // datetime-local values in shop time (YYYY-MM-DDTHH:mm), or ''
+  startsAt: string
+  endsAt: string
+  framed: boolean
+  autoplay: boolean
+  autoplaySeconds: number
+  // image and mobileImage are per language (the website shows the visitor's language)
+  slides: {
+    id: string | null
+    image: { th: number | null; en: number | null }
+    mobileImage: { th: number | null; en: number | null }
+    link: string
+  }[]
+}
+
+const LOCAL_DT = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/
+// Shop time is UTC+7 all year
+const fromShopTime = (v: string) =>
+  LOCAL_DT.test(v) ? new Date(`${v}:00+07:00`).toISOString() : null
+
+export async function savePopupAction(v: PopupInput): Promise<ActionResult> {
+  const s = await actionUser([...CONTENT])
+  if (!isSession(s)) return s
+  const { L } = s
+  if (v.slides.length > 10)
+    return { ok: false, message: L('ใส่ได้สูงสุด 10 สไลด์', 'Up to 10 slides') }
+  if (v.enabled && v.slides.length === 0)
+    return {
+      ok: false,
+      message: L(
+        'เพิ่มสไลด์อย่างน้อย 1 รูปก่อนเปิดแสดง',
+        'Add at least one slide to show the popup',
+      ),
+    }
+  if (v.slides.some((x) => !x.image.th && !x.image.en))
+    return { ok: false, message: L('ทุกสไลด์ต้องมีรูป 16:9', 'Every slide needs a 16:9 image') }
+  const startsAt = fromShopTime(v.startsAt)
+  const endsAt = fromShopTime(v.endsAt)
+  if (startsAt && endsAt && endsAt <= startsAt)
+    return {
+      ok: false,
+      message: L('วันสิ้นสุดต้องหลังวันเริ่ม', 'The end must be after the start'),
+    }
+  const secs = Math.round(Number(v.autoplaySeconds))
+  if (v.autoplay && !(secs >= 2 && secs <= 60))
+    return { ok: false, message: L('เปลี่ยนสไลด์ทุก 2-60 วินาที', 'Use 2-60 seconds per slide') }
+  try {
+    const th = await s.payload.updateGlobal({
+      slug: 'popup',
+      locale: 'th',
+      depth: 0,
+      data: {
+        enabled: v.enabled,
+        frequency: v.frequency === 'session' ? 'session' : 'day',
+        startsAt,
+        endsAt,
+        framed: v.framed,
+        autoplay: v.autoplay,
+        ...(secs >= 2 && secs <= 60 ? { autoplaySeconds: secs } : {}),
+        slides: v.slides.map((x) => ({
+          ...(x.id ? { id: x.id } : {}),
+          image: (x.image.th ?? x.image.en)!,
+          mobileImage: x.mobileImage.th ?? x.mobileImage.en ?? null,
+          link: opt(x.link),
+        })),
+      },
+      ...s.as,
+    })
+    await s.payload.updateGlobal({
+      slug: 'popup',
+      locale: 'en',
+      depth: 0,
+      data: {
+        slides: (th.slides ?? []).map((row, i) => {
+          const x = v.slides[i]
+          return {
+            id: row.id,
+            image: (x?.image.en ?? x?.image.th)!,
+            mobileImage: x?.mobileImage.en ?? x?.mobileImage.th ?? null,
+            link: row.link,
+          }
+        }),
+      },
+      ...s.as,
+    })
+    return done(
+      v.enabled
+        ? L('บันทึกแล้ว · ป๊อปอัปแสดงบนเว็บไซต์', 'Saved · the popup is live')
+        : L('บันทึกแล้ว · ซ่อนป๊อปอัปอยู่', 'Saved · the popup is hidden'),
+    )
+  } catch (err) {
+    return { ok: false, message: errorMessage(err, L) }
+  }
+}
+
+// ---------- cookie banner ----------
+
+export type CookieInput = { message: Pair; policyUrl: string }
+
+export async function saveCookieAction(v: CookieInput): Promise<ActionResult> {
+  const s = await actionUser([...CONTENT])
+  if (!isSession(s)) return s
+  const { L } = s
+  try {
+    await s.payload.updateGlobal({
+      slug: 'cookie-consent',
+      locale: 'th',
+      depth: 0,
+      data: { message: opt(v.message.th), policyUrl: opt(v.policyUrl) },
+      ...s.as,
+    })
+    await s.payload.updateGlobal({
+      slug: 'cookie-consent',
+      locale: 'en',
+      depth: 0,
+      data: { message: opt(v.message.en) },
+      ...s.as,
+    })
+    return done(L('บันทึกแบนเนอร์คุกกี้แล้ว', 'Cookie banner saved'))
   } catch (err) {
     return { ok: false, message: errorMessage(err, L) }
   }
