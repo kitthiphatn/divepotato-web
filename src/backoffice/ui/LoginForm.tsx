@@ -30,19 +30,23 @@ export function LoginForm({
       <h1>{L('เข้าสู่ระบบ', 'Sign in')}</h1>
       <p className="sub">
         {L(
-          'ยินดีต้อนรับกลับ ใช้อีเมลของร้านเพื่อเข้าใช้งาน',
-          'Welcome back. Use your shop email to sign in.',
+          'ยินดีต้อนรับกลับ ใช้ชื่อผู้ใช้หรืออีเมลของร้านเพื่อเข้าใช้งาน',
+          'Welcome back. Sign in with your username or shop email.',
         )}
       </p>
       <input type="hidden" name="next" value={next} />
       <label className="field">
-        <span>{L('อีเมล', 'Email')}</span>
+        <span>{L('ชื่อผู้ใช้หรืออีเมล', 'Username or email')}</span>
         <input
           className="inp"
-          type="email"
-          name="email"
-          placeholder="name@divepotato.co"
+          type="text"
+          name="login"
+          defaultValue={state?.login ?? ''}
+          placeholder={L('เช่น noi หรือ noi@divepotato.co', 'e.g. noi or noi@divepotato.co')}
           autoComplete="username"
+          autoCapitalize="none"
+          autoCorrect="off"
+          spellCheck={false}
           required
         />
       </label>

@@ -13,25 +13,33 @@ import { getLang, payloadClient } from '../server'
 
 const YEAR = 60 * 60 * 24 * 365
 
-export type LoginState = { error?: string } | undefined
+export type LoginState = { error?: string; login?: string } | undefined
 
-// Signs in with Payload's own auth and sets the same `payload-token` cookie the admin uses
+// Signs in with Payload's own auth and sets the same `payload-token` cookie the admin uses.
+// One box takes a username or an email: anything with "@" is treated as an email.
 export async function loginAction(_prev: LoginState, form: FormData): Promise<LoginState> {
   const L = translator(await getLang())
-  const email = String(form.get('email') ?? '').trim()
+  const login = String(form.get('login') ?? '').trim()
   const password = String(form.get('password') ?? '')
   const remember = form.get('remember') === 'on'
   const next = String(form.get('next') ?? '')
-  if (!email || !password)
-    return { error: L('กรอกอีเมลและรหัสผ่าน', 'Enter your email and password') }
+  if (!login || !password)
+    return {
+      login,
+      error: L('กรอกชื่อผู้ใช้หรืออีเมล และรหัสผ่าน', 'Enter your username or email and password'),
+    }
 
   const payload = await payloadClient()
   let target = BO
   try {
-    const res = await payload.login({ collection: 'users', data: { email, password } })
+    const res = await payload.login({
+      collection: 'users',
+      data: login.includes('@') ? { email: login, password } : { username: login, password },
+    })
     const role = roleOf(res.user)
     if (!res.token || !role)
       return {
+        login,
         error: L('บัญชีนี้ยังไม่มีสิทธิ์เข้าหลังบ้าน', 'This account has no backoffice role'),
       }
     const auth = payload.collections.users.config.auth
@@ -52,7 +60,11 @@ export async function loginAction(_prev: LoginState, form: FormData): Promise<Lo
     })
     target = next.startsWith(`${BO}/`) && !next.startsWith(`${BO}/login`) ? next : homeFor(role)
   } catch {
-    return { error: L('อีเมลหรือรหัสผ่านไม่ถูกต้อง', 'Wrong email or password') }
+    // Same message whether the account or the password was wrong
+    return {
+      login,
+      error: L('ชื่อผู้ใช้/อีเมล หรือรหัสผ่านไม่ถูกต้อง', 'Wrong username/email or password'),
+    }
   }
   redirect(target)
 }
