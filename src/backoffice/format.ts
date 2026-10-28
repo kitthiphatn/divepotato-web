@@ -146,3 +146,15 @@ export function initials(name: string | null | undefined) {
   }
   return (p[0][0] + (p[1] ? p[1][0] : '')).toUpperCase()
 }
+
+// URL slug from an English title: lowercase a-z, 0-9 and dashes (as the slug field requires)
+export const slugify = (s: string) =>
+  s
+    .toLowerCase()
+    .normalize('NFKD')
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '')
+    .slice(0, 60)
+    .replace(/-+$/, '')
+
+export const SLUG_RE = /^[a-z0-9]+(?:-[a-z0-9]+)*$/

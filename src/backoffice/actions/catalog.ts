@@ -4,6 +4,7 @@
 // rows (itinerary row ids are shared between languages), through the Local API as the user.
 import { revalidatePath } from 'next/cache'
 
+import { slugify } from '../format'
 import { textToLexical } from '../richtext'
 import { BO } from '../nav'
 import { actionUser, errorMessage, isSession, type ActionResult } from '../server'
@@ -29,14 +30,6 @@ export type OfferingInput = {
   padiCode?: string
   gallery: number[]
 }
-
-const slugify = (s: string) =>
-  s
-    .toLowerCase()
-    .normalize('NFKD')
-    .replace(/[^a-z0-9]+/g, '-')
-    .replace(/^-+|-+$/g, '')
-    .slice(0, 60)
 
 export async function saveOfferingAction(v: OfferingInput): Promise<ActionResult> {
   const s = await actionUser(['admin', 'editor'])

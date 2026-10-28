@@ -1,12 +1,15 @@
 'use client'
 
 import Link from 'next/link'
+import { useRouter } from 'next/navigation'
 import { useState, useTransition } from 'react'
 
 import { setStockAction } from '../actions/shop'
 import { money } from '../format'
 import { translator, type Lang } from '../i18n'
 import { Icon } from '../icons'
+import { BO } from '../nav'
+import { isOneSize } from '../shop'
 import { Modal } from './Modal'
 import { useToast } from './Toast'
 
@@ -14,15 +17,15 @@ export type ProductVM = {
   id: number
   title: string
   icon: string
+  image: string | null
   price: number
   variants: { id: number; size: string; stock: number }[]
 }
 
-const isOneSize = (s: string) => !s || /^(free|one)\s*size$/i.test(s)
-
 export function ShopGrid({ lang, products }: { lang: Lang; products: ProductVM[] }) {
   const L = translator(lang)
   const toast = useToast()
+  const router = useRouter()
   const [pending, start] = useTransition()
   const [edit, setEdit] = useState<{
     p: ProductVM
@@ -40,19 +43,34 @@ export function ShopGrid({ lang, products }: { lang: Lang; products: ProductVM[]
         {products.map((p) => {
           const total = p.variants.reduce((a, v) => a + v.stock, 0)
           return (
-            <section key={p.id} className="card prod">
-              <span className="pim">
-                <Icon name={p.icon} />
-              </span>
+            <section
+              key={p.id}
+              className="card prod"
+              // The whole card opens the editor; the size buttons and links keep their own action
+              onClick={(e) => {
+                if ((e.target as HTMLElement).closest('button, a')) return
+                router.push(`${BO}/shop/${p.id}`)
+              }}
+            >
+              <Link className="pim" href={`${BO}/shop/${p.id}`} tabIndex={-1} aria-hidden="true">
+                {p.image ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img src={p.image} alt="" loading="lazy" />
+                ) : (
+                  <Icon name={p.icon} />
+                )}
+              </Link>
               <div>
                 <div className="ptop">
                   <div>
-                    <h3>{p.title}</h3>
+                    <h3>
+                      <Link href={`${BO}/shop/${p.id}`}>{p.title}</Link>
+                    </h3>
                     <small className="num">
                       {money(p.price)} · {L('รวม', 'total')} {total} {L('ชิ้น', 'pcs')}
                     </small>
                   </div>
-                  <Link className="btn t sm" href={`/admin/collections/products/${p.id}`}>
+                  <Link className="btn t sm" href={`${BO}/shop/${p.id}`}>
                     <Icon name="edit" />
                     {L('แก้ไข', 'Edit')}
                   </Link>

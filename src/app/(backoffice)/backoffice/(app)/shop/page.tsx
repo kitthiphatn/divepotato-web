@@ -1,25 +1,15 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
 
-import { relId } from '@/backoffice/data'
+import { mediaUrl, relId } from '@/backoffice/data'
 import { Icon } from '@/backoffice/icons'
+import { BO } from '@/backoffice/nav'
 import { requireUser } from '@/backoffice/server'
+import { PRODUCT_ICON, sizeRank } from '@/backoffice/shop'
+import type { Media } from '@/payload-types'
 import { ShopGrid, type ProductVM } from '@/backoffice/ui/Shop'
 
 export const metadata: Metadata = { title: 'ร้านค้า · Shop' }
-
-const ICON: Record<string, string> = {
-  mask: 'mask',
-  fins: 'fin',
-  wetsuit: 'suit',
-  computer: 'watch',
-  accessory: 'sparkle',
-}
-const SIZE_ORDER = ['XXS', 'XS', 'S', 'M', 'L', 'XL', 'XXL', '3XL']
-const sizeRank = (s: string) => {
-  const i = SIZE_ORDER.indexOf(s.trim().split(/\s+/)[0].toUpperCase())
-  return i < 0 ? 100 + (Number.parseFloat(s) || 0) : i
-}
 
 export default async function ShopPage() {
   const s = await requireUser(['admin', 'editor'])
@@ -29,10 +19,10 @@ export default async function ShopPage() {
       collection: 'products',
       draft: true,
       pagination: false,
-      depth: 0,
+      depth: 1,
       sort: 'title',
       locale: s.lang,
-      select: { title: true, category: true },
+      select: { title: true, category: true, images: true },
       ...s.as,
     }),
     s.payload.find({
@@ -49,7 +39,8 @@ export default async function ShopPage() {
     return {
       id: p.id,
       title: p.title ?? '',
-      icon: ICON[p.category ?? ''] ?? 'bag',
+      icon: PRODUCT_ICON[p.category ?? ''] ?? 'bag',
+      image: mediaUrl((p.images?.[0] ?? null) as Media | number | null),
       price: vs.length ? Math.min(...vs.map((v) => v.price)) : 0,
       variants: vs.map((v) => ({ id: v.id, size: v.size ?? '', stock: v.stock ?? 0 })),
     }
@@ -68,11 +59,14 @@ export default async function ShopPage() {
         <div>
           <h1>{L('ร้านค้า', 'Shop')}</h1>
           <p className="lede">
-            {L('สต็อกแยกตามไซซ์ แตะตัวเลขเพื่อปรับจำนวน', 'Stock per size; tap a number to adjust')}
+            {L(
+              'สต็อกแยกตามไซซ์ แตะตัวเลขเพื่อปรับจำนวน แตะสินค้าเพื่อแก้ไข',
+              'Stock per size; tap a number to adjust, tap a product to edit',
+            )}
           </p>
         </div>
         <div className="acts">
-          <Link className="btn y" href="/admin/collections/products/create">
+          <Link className="btn y" href={`${BO}/shop/new`}>
             <Icon name="plus" />
             {L('เพิ่มสินค้า', 'Add product')}
           </Link>
