@@ -1,5 +1,6 @@
 import * as migration_20261027_180301_initial from './20261027_180301_initial';
 import * as migration_20261028_074547_home_hero_slides from './20261028_074547_home_hero_slides';
+import * as migration_20261028_115304_login_with_username from './20261028_115304_login_with_username';
 
 export const migrations = [
   {
@@ -10,6 +11,11 @@ export const migrations = [
   {
     up: migration_20261028_074547_home_hero_slides.up,
     down: migration_20261028_074547_home_hero_slides.down,
-    name: '20261028_074547_home_hero_slides'
+    name: '20261028_074547_home_hero_slides',
+  },
+  {
+    up: migration_20261028_115304_login_with_username.up,
+    down: migration_20261028_115304_login_with_username.down,
+    name: '20261028_115304_login_with_username',
   },
 ];
