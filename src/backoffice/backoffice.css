@@ -5282,3 +5282,29 @@ button.tcard {
   overflow: hidden;
   margin-top: 4px;
 }
+
+/* ===== rental gear ===== */
+.row.rrow {
+  grid-template-columns: minmax(0, 1fr) 140px 120px 20px;
+  cursor: pointer;
+}
+.row.rrow .sz {
+  margin: 0;
+  grid-template-columns: minmax(68px, 96px);
+}
+.sumchips:has(.btn) {
+  align-items: center;
+}
+.sumchips .btn {
+  flex: none;
+}
+@media (max-width: 760px) {
+  .row.rrow .c2 {
+    grid-row: 1 / span 2;
+    padding-left: 0;
+  }
+  .row.rrow .amt {
+    grid-column: 2;
+    grid-row: 2;
+  }
+}

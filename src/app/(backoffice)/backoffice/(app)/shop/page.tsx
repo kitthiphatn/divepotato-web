@@ -7,6 +7,7 @@ import { BO } from '@/backoffice/nav'
 import { requireUser } from '@/backoffice/server'
 import { PRODUCT_ICON, sizeRank } from '@/backoffice/shop'
 import type { Media } from '@/payload-types'
+import { SubTabs } from '@/backoffice/ui/fields'
 import { ShopGrid, type ProductVM } from '@/backoffice/ui/Shop'
 
 export const metadata: Metadata = { title: 'ร้านค้า · Shop' }
@@ -72,6 +73,17 @@ export default async function ShopPage() {
           </Link>
         </div>
       </div>
+      <SubTabs
+        items={[
+          { href: `${BO}/shop`, label: L('สินค้า', 'Products'), icon: 'bag', on: true },
+          {
+            href: `${BO}/shop/rentals`,
+            label: L('อุปกรณ์ให้เช่า', 'Rental gear'),
+            icon: 'suit',
+            on: false,
+          },
+        ]}
+      />
       <div className="sumchips" style={{ marginBottom: 18 }}>
         <span className="pill st-review">
           {L('ใกล้หมด', 'Low')} {low} {L('ไซซ์', 'sizes')}
