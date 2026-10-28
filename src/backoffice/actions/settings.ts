@@ -109,3 +109,78 @@ export async function setRoleAction(userId: number, role: string): Promise<Actio
     return { ok: false, message: errorMessage(err, L) }
   }
 }
+
+export type StaffInput = { name: string; email: string; role: string; password: string }
+
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+
+// Admins add a team member with a temporary password (shared with them in person or on LINE)
+export async function createStaffAction(v: StaffInput): Promise<ActionResult> {
+  const s = await actionUser(['admin'])
+  if (!isSession(s)) return s
+  const { L } = s
+  const name = v.name.trim()
+  const email = v.email.trim().toLowerCase()
+  if (!name) return { ok: false, message: L('ใส่ชื่อ', 'Enter a name') }
+  if (!EMAIL_RE.test(email)) return { ok: false, message: L('อีเมลไม่ถูกต้อง', 'Invalid email') }
+  if (!ROLES.includes(v.role as User['role']))
+    return { ok: false, message: L('เลือกสิทธิ์', 'Pick a role') }
+  if (v.password.length < 8)
+    return {
+      ok: false,
+      message: L('รหัสผ่านต้องยาวอย่างน้อย 8 ตัวอักษร', 'Use at least 8 characters'),
+    }
+  try {
+    const taken = await s.payload.count({
+      collection: 'users',
+      where: { email: { equals: email } },
+      ...s.as,
+    })
+    if (taken.totalDocs)
+      return { ok: false, message: L('อีเมลนี้มีบัญชีแล้ว', 'This email already has an account') }
+    const u = await s.payload.create({
+      collection: 'users',
+      data: { name, email, role: v.role as User['role'], password: v.password },
+      depth: 0,
+      ...s.as,
+    })
+    revalidatePath(BO, 'layout')
+    return {
+      ok: true,
+      id: u.id,
+      message: L(`เพิ่ม ${name} เข้าทีมแล้ว`, `${name} added to the team`),
+    }
+  } catch (err) {
+    return { ok: false, message: errorMessage(err, L) }
+  }
+}
+
+// Admins set a new temporary password for someone who forgot theirs
+export async function setPasswordAction(userId: number, password: string): Promise<ActionResult> {
+  const s = await actionUser(['admin'])
+  if (!isSession(s)) return s
+  const { L } = s
+  if (password.length < 8)
+    return {
+      ok: false,
+      message: L('รหัสผ่านต้องยาวอย่างน้อย 8 ตัวอักษร', 'Use at least 8 characters'),
+    }
+  try {
+    const u = await s.payload.update({
+      collection: 'users',
+      id: userId,
+      data: { password },
+      depth: 0,
+      ...s.as,
+    })
+    return {
+      ok: true,
+      message: L(
+        `ตั้งรหัสผ่านใหม่ให้ ${u.name || u.email} แล้ว`,
+        `New password set for ${u.name || u.email}`,
+      ),
+    }
+  } catch (err) {
+    return { ok: false, message: errorMessage(err, L) }
+  }
+}

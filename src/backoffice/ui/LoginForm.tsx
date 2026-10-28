@@ -1,7 +1,6 @@
 'use client'
 
-import Link from 'next/link'
-import { useActionState } from 'react'
+import { useActionState, useState } from 'react'
 
 import { loginAction, type LoginState } from '../actions/session'
 import { translator, type Lang } from '../i18n'
@@ -17,6 +16,7 @@ export function LoginForm({
 }) {
   const L = translator(lang)
   const [state, action, pending] = useActionState<LoginState, FormData>(loginAction, undefined)
+  const [forgot, setForgot] = useState(false)
   const error =
     state?.error ??
     (roleError
@@ -62,8 +62,23 @@ export function LoginForm({
           <input type="checkbox" name="remember" defaultChecked />{' '}
           {L('จดจำฉันไว้', 'Keep me signed in')}
         </label>
-        <Link href="/admin/forgot">{L('ลืมรหัสผ่าน?', 'Forgot password?')}</Link>
+        <button
+          type="button"
+          className="lg-forgot"
+          aria-expanded={forgot}
+          onClick={() => setForgot((f) => !f)}
+        >
+          {L('ลืมรหัสผ่าน?', 'Forgot password?')}
+        </button>
       </div>
+      {forgot && (
+        <p className="lg-help" role="note" style={{ marginTop: 12 }}>
+          {L(
+            'ติดต่อผู้ดูแลระบบของร้าน ให้ตั้งรหัสผ่านชั่วคราวใหม่ได้ที่ ตั้งค่า › ทีมงานและสิทธิ์',
+            'Ask the shop admin to set a temporary password in Settings › Staff & roles.',
+          )}
+        </p>
+      )}
       {error && (
         <p className="err" role="alert">
           {error}
@@ -74,8 +89,8 @@ export function LoginForm({
       </button>
       <p className="lg-help">
         {L(
-          'ใช้บัญชีเดียวกับหลังบ้าน Payload (/admin) สิทธิ์ของบัญชีกำหนดเมนูที่เห็น',
-          'Uses the same accounts as the Payload admin (/admin); your role decides which menus you see.',
+          'ใช้บัญชีทีมงานของร้าน สิทธิ์ของบัญชีกำหนดเมนูที่เห็น',
+          'Use your shop team account; your role decides which menus you see.',
         )}
       </p>
     </form>

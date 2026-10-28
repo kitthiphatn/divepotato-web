@@ -4652,3 +4652,51 @@ select.inp {
     width: 100%;
   }
 }
+
+/* ===== settings: add staff, new password ===== */
+.staff li {
+  grid-template-columns: minmax(0, 1fr) auto;
+}
+.staff .sact {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.staff .sact select.inp {
+  width: 160px;
+}
+.field > .unit.pw {
+  display: block;
+  color: inherit;
+  font-size: inherit;
+  font-weight: 400;
+  margin: 0;
+}
+.unit.pw .inp {
+  padding-right: 96px;
+}
+.unit.pw .btn {
+  position: absolute;
+  right: 6px;
+  top: 50%;
+  transform: translateY(-50%);
+}
+@media (max-width: 760px) {
+  .staff li {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .staff .sact {
+    justify-content: flex-end;
+  }
+  .staff .sact select.inp {
+    width: 140px;
+  }
+}
+.lg-forgot {
+  font-size: 14px;
+  color: inherit;
+}
+.lg-forgot:hover {
+  color: var(--ink);
+  text-decoration: underline;
+}

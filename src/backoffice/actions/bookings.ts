@@ -2,7 +2,7 @@
 
 // Booking actions from the booking panel. Everything goes through the Payload Local API as the
 // signed-in user, so access rules and the booking hooks (code, totals, seat counts, timeline,
-// audit log) run exactly as they do in /admin.
+// audit log) run exactly as they do in the Payload admin panel.
 import { revalidatePath } from 'next/cache'
 
 import type { Booking, Payment } from '@/payload-types'

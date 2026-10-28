@@ -1,13 +1,33 @@
 'use client'
 
-import Link from 'next/link'
 import { useState, useTransition } from 'react'
 
-import { saveSettingsAction, setRoleAction, type SettingsInput } from '../actions/settings'
+import {
+  createStaffAction,
+  saveSettingsAction,
+  setPasswordAction,
+  setRoleAction,
+  type SettingsInput,
+  type StaffInput,
+} from '../actions/settings'
 import { initials, money } from '../format'
 import { ROLE_LABEL, translator, type Lang } from '../i18n'
 import { Icon } from '../icons'
+import { Modal } from './Modal'
 import { useToast } from './Toast'
+
+// A readable temporary password, e.g. "reef-7342-manta"
+const WORDS = ['reef', 'manta', 'turtle', 'coral', 'shark', 'wave', 'ocean', 'whale']
+function tempPassword() {
+  const w = () => WORDS[Math.floor(Math.random() * WORDS.length)]
+  return `${w()}-${Math.floor(1000 + Math.random() * 9000)}-${w()}`
+}
+const blankStaff = (): StaffInput => ({
+  name: '',
+  email: '',
+  role: 'staff',
+  password: tempPassword(),
+})
 
 export type StaffRow = { id: number; name: string; email: string; role: string; me: boolean }
 
@@ -34,6 +54,22 @@ export function SettingsForm({
     value: v[k] as string,
     onChange: (e: { target: { value: string } }) => set(k, e.target.value as never),
   })
+  const [invite, setInvite] = useState<StaffInput | null>(null)
+  const [reset, setReset] = useState<{ u: StaffRow; password: string } | null>(null)
+  const addStaff = () =>
+    invite &&
+    start(async () => {
+      const r = await createStaffAction(invite)
+      toast(r.message, r.ok)
+      if (r.ok) setInvite(null)
+    })
+  const savePassword = () =>
+    reset &&
+    start(async () => {
+      const r = await setPasswordAction(reset.u.id, reset.password)
+      toast(r.message, r.ok)
+      if (r.ok) setReset(null)
+    })
   const soon = <span className="soon">{L('เร็วๆ นี้', 'Coming soon')}</span>
 
   const save = () =>
@@ -283,10 +319,10 @@ export function SettingsForm({
         <section className="card fsec" id="set-staff">
           <div className="ch" style={{ marginBottom: 4 }}>
             <h3>{L('ทีมงานและสิทธิ์', 'Staff & roles')}</h3>
-            <Link className="btn g sm" href="/admin/collections/users/create">
+            <button className="btn g sm" type="button" onClick={() => setInvite(blankStaff())}>
               <Icon name="plus" />
-              {L('เชิญทีมงาน', 'Invite')}
-            </Link>
+              {L('เพิ่มทีมงาน', 'Add staff')}
+            </button>
           </div>
           <ul className="staff">
             {staff.map((u) => (
@@ -301,19 +337,38 @@ export function SettingsForm({
                     <small>{u.email}</small>
                   </span>
                 </span>
-                <select
-                  className="inp"
-                  value={roles[u.id]}
-                  disabled={u.me || pending}
-                  aria-label={L(`สิทธิ์ของ ${u.name || u.email}`, `Role for ${u.name || u.email}`)}
-                  onChange={(e) => changeRole(u, e.target.value)}
-                >
-                  {Object.entries(ROLE_LABEL).map(([k, r]) => (
-                    <option key={k} value={k}>
-                      {L(r[0], r[1])}
-                    </option>
-                  ))}
-                </select>
+                <span className="sact">
+                  {!u.me && (
+                    <button
+                      className="ibtn"
+                      type="button"
+                      title={L('ตั้งรหัสผ่านใหม่', 'Set a new password')}
+                      aria-label={L(
+                        `ตั้งรหัสผ่านใหม่ให้ ${u.name || u.email}`,
+                        `Set a new password for ${u.name || u.email}`,
+                      )}
+                      onClick={() => setReset({ u, password: tempPassword() })}
+                    >
+                      <Icon name="refund" />
+                    </button>
+                  )}
+                  <select
+                    className="inp"
+                    value={roles[u.id] ?? u.role}
+                    disabled={u.me || pending}
+                    aria-label={L(
+                      `สิทธิ์ของ ${u.name || u.email}`,
+                      `Role for ${u.name || u.email}`,
+                    )}
+                    onChange={(e) => changeRole(u, e.target.value)}
+                  >
+                    {Object.entries(ROLE_LABEL).map(([k, r]) => (
+                      <option key={k} value={k}>
+                        {L(r[0], r[1])}
+                      </option>
+                    ))}
+                  </select>
+                </span>
               </li>
             ))}
           </ul>
@@ -334,6 +389,123 @@ export function SettingsForm({
           </button>
         </div>
       </div>
+
+      {invite && (
+        <Modal onClose={() => setInvite(null)} label={L('เพิ่มทีมงาน', 'Add staff')}>
+          <h3>{L('เพิ่มทีมงาน', 'Add a team member')}</h3>
+          <p className="s">
+            {L(
+              'สร้างบัญชีพร้อมรหัสผ่านชั่วคราว แล้วส่งให้ทีมงานเข้าสู่ระบบที่ /backoffice',
+              'Creates an account with a temporary password; send it to them to sign in at /backoffice',
+            )}
+          </p>
+          <form
+            onSubmit={(e) => {
+              e.preventDefault()
+              addStaff()
+            }}
+          >
+            <label className="field">
+              <span>{L('ชื่อ', 'Name')}</span>
+              <input
+                className="inp"
+                value={invite.name}
+                autoFocus
+                required
+                onChange={(e) => setInvite((x) => x && { ...x, name: e.target.value })}
+              />
+            </label>
+            <label className="field">
+              <span>{L('อีเมล', 'Email')}</span>
+              <input
+                className="inp"
+                type="email"
+                value={invite.email}
+                required
+                autoComplete="off"
+                onChange={(e) => setInvite((x) => x && { ...x, email: e.target.value })}
+              />
+            </label>
+            <label className="field">
+              <span>{L('สิทธิ์', 'Role')}</span>
+              <select
+                className="inp"
+                value={invite.role}
+                onChange={(e) => setInvite((x) => x && { ...x, role: e.target.value })}
+              >
+                {Object.entries(ROLE_LABEL).map(([k, r]) => (
+                  <option key={k} value={k}>
+                    {L(r[0], r[1])} · {L(r[2], r[3])}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <label className="field">
+              <span>{L('รหัสผ่านชั่วคราว', 'Temporary password')}</span>
+              <span className="unit pw">
+                <input
+                  className="inp"
+                  value={invite.password}
+                  required
+                  minLength={8}
+                  autoComplete="new-password"
+                  spellCheck={false}
+                  onChange={(e) => setInvite((x) => x && { ...x, password: e.target.value })}
+                />
+                <button
+                  className="btn t sm"
+                  type="button"
+                  onClick={() => setInvite((x) => x && { ...x, password: tempPassword() })}
+                >
+                  {L('สุ่มใหม่', 'New')}
+                </button>
+              </span>
+            </label>
+            <div className="acts">
+              <button className="btn o" type="button" onClick={() => setInvite(null)}>
+                {L('ยกเลิก', 'Cancel')}
+              </button>
+              <button className="btn y" type="submit" disabled={pending}>
+                <Icon name="plus" />
+                {L('เพิ่มทีมงาน', 'Add staff')}
+              </button>
+            </div>
+          </form>
+        </Modal>
+      )}
+
+      {reset && (
+        <Modal onClose={() => setReset(null)} label={L('ตั้งรหัสผ่านใหม่', 'New password')}>
+          <h3>{L('ตั้งรหัสผ่านใหม่', 'Set a new password')}</h3>
+          <p className="s">
+            {reset.u.name || reset.u.email} ·{' '}
+            {L(
+              'ส่งรหัสนี้ให้ทีมงาน แล้วให้เข้าสู่ระบบด้วยรหัสใหม่',
+              'Send this to them; they sign in with it',
+            )}
+          </p>
+          <label className="field">
+            <span>{L('รหัสผ่านชั่วคราว', 'Temporary password')}</span>
+            <input
+              className="inp"
+              value={reset.password}
+              minLength={8}
+              autoComplete="new-password"
+              spellCheck={false}
+              onChange={(e) => setReset((x) => x && { ...x, password: e.target.value })}
+            />
+          </label>
+          <div className="acts">
+            <button className="btn o" type="button" onClick={() => setReset(null)}>
+              {L('ยกเลิก', 'Cancel')}
+            </button>
+            <button className="btn y" type="button" disabled={pending} onClick={savePassword}>
+              <Icon name="check" />
+              {L('บันทึกรหัสผ่าน', 'Save password')}
+            </button>
+          </div>
+        </Modal>
+      )}
     </div>
   )
 }

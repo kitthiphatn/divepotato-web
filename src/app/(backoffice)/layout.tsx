@@ -21,7 +21,7 @@ export const viewport: Viewport = {
   viewportFit: 'cover',
 }
 
-// Root layout of the staff backoffice (/backoffice); separate from the public site and /admin
+// Root layout of the staff backoffice (/backoffice); separate from the public site and the Payload admin panel
 export default async function BackofficeRootLayout({ children }: { children: ReactNode }) {
   const [lang, theme] = await Promise.all([getLang(), getTheme()])
   return (
