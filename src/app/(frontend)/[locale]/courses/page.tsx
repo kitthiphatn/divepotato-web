@@ -11,6 +11,9 @@ import { courseLevel, monthKey, monthLabel } from '@/site/format'
 import { getDict } from '@/site/i18n'
 import { pageMeta } from '@/site/seo'
 
+// Filters come from the query string, so this list is rendered per request
+export const dynamic = 'force-dynamic'
+
 type Props = {
   params: Promise<{ locale: string }>
   searchParams: Promise<Record<string, string | string[] | undefined>>

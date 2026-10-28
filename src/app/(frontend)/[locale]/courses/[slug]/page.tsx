@@ -17,6 +17,11 @@ import { absUrl, jsonLd, pageMeta } from '@/site/seo'
 
 type Props = { params: Promise<{ locale: string; slug: string }> }
 
+// Rendered on first request, then cached like the other pages (see the locale layout)
+export function generateStaticParams() {
+  return [] as { locale: string; slug: string }[]
+}
+
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { locale, slug } = await params
   if (!isLocale(locale)) return {}

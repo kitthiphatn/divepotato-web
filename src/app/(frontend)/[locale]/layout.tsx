@@ -4,7 +4,7 @@ import type { ReactNode } from 'react'
 
 import '../globals.css'
 
-import { isLocale, locales } from '@/i18n/config'
+import { isLocale } from '@/i18n/config'
 import { getSite, listCourses, mediaOf } from '@/lib/content'
 import { Analytics } from '@/site/components/Analytics'
 import { AnnouncementBar } from '@/site/components/AnnouncementBar'
@@ -21,8 +21,10 @@ import { siteUrl } from '@/site/seo'
 // collections' and globals' revalidate hooks
 export const revalidate = 60
 
+// Nothing is pre-rendered at build time: the build runs against an empty throwaway database,
+// so each page is rendered from the real database on its first request and then cached (ISR)
 export function generateStaticParams() {
-  return locales.map((locale) => ({ locale }))
+  return [] as { locale: string }[]
 }
 
 export const viewport: Viewport = {

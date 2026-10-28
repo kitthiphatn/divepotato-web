@@ -4,7 +4,8 @@ import { locales } from '@/i18n/config'
 import { sitemapEntries } from '@/lib/content'
 import { siteUrl } from '@/site/seo'
 
-export const revalidate = 3600
+// Built per request (crawlers ask rarely): a build-time copy would come from the empty build database
+export const dynamic = 'force-dynamic'
 
 // Every public page in both languages, each with its hreflang alternates
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
