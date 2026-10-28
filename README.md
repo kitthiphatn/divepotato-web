@@ -24,7 +24,7 @@ npm run dev            # http://localhost:3006 and http://localhost:3006/admin
 | Editor (บรรณาธิการ) | `editor` | `editor@divepotato.local` | `divepotato-demo` |
 | Guide (ไกด์) | `guide` | `guide@divepotato.local` | `divepotato-demo` |
 
-Sign in at `/backoffice` or `/admin` with **either the username or the email**
+Sign in at `/backoffice` (admins can also use `/admin`) with **either the username or the email**
 (เข้าสู่ระบบด้วยชื่อผู้ใช้หรืออีเมลก็ได้). Usernames are lowercase `a-z`, `0-9` and `. _ -`.
 Running the seed on an older database gives the demo accounts their usernames; the
 `login_with_username` migration gives every existing account a username from its email
@@ -43,14 +43,18 @@ All seeded people, prices and dates are sample data.
 
 `http://localhost:3006/backoffice` is the day-to-day back office for the shop team. It uses the same
 Payload login and access rules as `/admin`, in Thai by default (TH/EN switch at the top), with dark
-mode, and works on phones (bottom tab bar). Everything the team edits day to day has a screen here,
-so nobody is sent to `/admin`; it stays available for admins only, through "เปิดหลังบ้านแบบเต็ม
-(สำหรับผู้ดูแลระบบ)" in the user menu and Settings.
+mode, and works on phones (bottom tab bar). Every function of the Payload admin panel has a screen
+here, so the team never needs `/admin` and the backoffice has no links to it. `/admin` itself still
+works for **admins only**, by typing the address (emergency use): the Users collection's
+`access.admin` allows the admin role only, and the proxy (`src/proxy.ts`) redirects Payload's
+`/admin/unauthorized` page to `/backoffice`, so staff, editors and guides who open `/admin` (or sign
+in there) land in the backoffice. This gates the panel only; the REST and Local API keep the
+collection access rules.
 
 | Role | Sees |
 |---|---|
 | Admin | Everything |
-| Staff | Today, Bookings, Departures, Customers |
+| Staff | Today, Bookings (with Payments), Departures, Customers |
 | Editor | Trips & courses, Website, Shop |
 | Guide | Today (read-only), Departures and manifests |
 
@@ -59,23 +63,49 @@ so nobody is sent to `/admin`; it stays available for admins only, through "เ�
 - **Bookings**: search, status chips, booking panel with steps, slip, payments, participants and
   timeline. Approve or reject a slip, record a deposit or balance (creates a Payment), mark
   completed, cancel with refund, create a booking on hold. LINE/email buttons are marked "coming soon".
+- **Payments** (`/backoffice/bookings/payments`, tab in Bookings; staff and admin): every payment
+  and refund, status chips and a provider filter, slip thumbnail (tap for the full slip), "open
+  booking" link, 30 per page.
 - **Departures**: month calendar or list, departure detail with participants, printable manifest,
   create (admin) and edit.
 - **Trips & courses**: cards by category; editor with TH/EN text, price and deposit, day-by-day
   itinerary, description in the block editor, photos from the media picker, show-on-website switch
-  (published/draft) and a live preview card.
+  (published/draft) and a live preview card. **Dive sites** tab (`/backoffice/trips/sites`): cards
+  with photo, TH/EN name, region and description; add, edit, delete (warns which trips use the site).
 - **Customers**: search, profile with booking history and staff notes, add/edit.
 - **Website**: home hero slides and the announcement bar with live previews; articles list and
   article editor (`/backoffice/website/articles/new`, `/[id]`): TH/EN title, summary and body,
   category, publish date, slug, cover, SEO title/description with a Google preview, publish/draft
   switch and a live article preview.
+  Further tabs (`/backoffice/website?tab=...`):
+  - **หน้าแรก** (`home`): the home highlight cards (icon, TH/EN title and text, reorder, up to 6)
+    and the show trips / courses / latest posts / FAQ switches, with a preview.
+  - **ป๊อปอัป** (`popup`): on/off, how often, start/end (Thai time), white frame, auto-advance and
+    seconds, up to 10 slides with a 16:9 and a 9:16 phone image per language and a link, with a
+    desktop/phone preview.
+  - **เกี่ยวกับเรา** (`about`): TH/EN title and intro, main image, key figures, body in the block
+    editor, SEO (title, description, share image) with a Google preview and a page preview.
+  - **คำถามที่พบบ่อย** (`faq`): list by order with category chips, add/edit in a dialog (TH/EN
+    question and answer, category, show on home, order), delete, and up/down to reorder.
+  - **แบนเนอร์คุกกี้** (`cookie`): TH/EN message and privacy policy link, with a preview.
+  - **ข้อมูลร้าน** (`site`): the site-settings global: TH/EN site name, logo, favicon, phone, email,
+    LINE ID and link, TH/EN hours and address, Facebook/Instagram/TikTok/YouTube/WhatsApp links,
+    the fallback home hero, TH/EN footer note and the Google Analytics ID, with a footer preview.
+  - **คลังรูป** (`media`): every file in Media with search, upload (same form and server action as
+    the picker), TH/EN alt text editing, and delete for admins only. Before deleting, it lists where
+    the photo is still used (trips, courses, articles, products, dive sites, payment slips, shop
+    info, home slides, About and popup); photos placed inside rich text bodies are not checked.
 - **Shop**: stock per size (tap a size to adjust with +/-); tap a product to open the product editor
   (`/backoffice/shop/new`, `/[id]`): TH/EN name and description, brand, category, slug, photos, a
-  sizes table (SKU, size, price, stock) and a live product card. Deleting a product is admin-only.
+  sizes table (SKU, size, price, stock) and a live product card. Deleting a product is admin-only. **Rental gear** tab
+  (`/backoffice/shop/rentals`): TH/EN name, price per day and stock (tap the stock to adjust with
+  +/-); add and edit, delete for admins only.
 - **Settings** (admin): deposit %, seat hold minutes, cancellation policy (TH/EN plain text), Omise
   and LINE keys (stored for phase 2), staff roles, **add staff** (name, email, username prefilled
   from the email, role, temporary password), **edit a username** and **set a new password** for
-  someone who forgot theirs.
+  someone who forgot theirs. **Audit log** (`/backoffice/settings/audit`): read-only list of what
+  the audit hook records (bookings, payments, departures, trips), filtered by collection, user and
+  action, 30 per page, with the changed fields and their before/after values.
 
 **Block editor** (articles and trip descriptions): one card per block: paragraph, H2, H3, bullet or
 numbered list (one item per line), quote and photo. Inside the text: `**bold**`, `*italic*` and
