@@ -37,8 +37,9 @@ All seeded people, prices and dates are sample data.
 
 `http://localhost:3006/backoffice` is the day-to-day back office for the shop team. It uses the same
 Payload login and access rules as `/admin`, in Thai by default (TH/EN switch at the top), with dark
-mode, and works on phones (bottom tab bar). `/admin` stays available; admins get a link to it from
-the user menu and Settings.
+mode, and works on phones (bottom tab bar). Everything the team edits day to day has a screen here,
+so nobody is sent to `/admin`; it stays available for admins only, through "เปิดหลังบ้านแบบเต็ม
+(สำหรับผู้ดูแลระบบ)" in the user menu and Settings.
 
 | Role | Sees |
 |---|---|
@@ -55,13 +56,32 @@ the user menu and Settings.
 - **Departures**: month calendar or list, departure detail with participants, printable manifest,
   create (admin) and edit.
 - **Trips & courses**: cards by category; editor with TH/EN text, price and deposit, day-by-day
-  itinerary, photos from Media, show-on-website switch (published/draft) and a live preview card.
+  itinerary, description in the block editor, photos from the media picker, show-on-website switch
+  (published/draft) and a live preview card.
 - **Customers**: search, profile with booking history and staff notes, add/edit.
-- **Website**: home hero slides and the announcement bar with live previews; articles list (opens
-  `/admin` to write).
-- **Shop**: stock per size, tap a size to adjust with +/-.
+- **Website**: home hero slides and the announcement bar with live previews; articles list and
+  article editor (`/backoffice/website/articles/new`, `/[id]`): TH/EN title, summary and body,
+  category, publish date, slug, cover, SEO title/description with a Google preview, publish/draft
+  switch and a live article preview.
+- **Shop**: stock per size (tap a size to adjust with +/-); tap a product to open the product editor
+  (`/backoffice/shop/new`, `/[id]`): TH/EN name and description, brand, category, slug, photos, a
+  sizes table (SKU, size, price, stock) and a live product card. Deleting a product is admin-only.
 - **Settings** (admin): deposit %, seat hold minutes, cancellation policy (TH/EN plain text), Omise
-  and LINE keys (stored for phase 2), staff roles.
+  and LINE keys (stored for phase 2), staff roles, **add staff** (name, email, role, temporary
+  password) and **set a new password** for someone who forgot theirs.
+
+**Block editor** (articles and trip descriptions): one card per block: paragraph, H2, H3, bullet or
+numbered list (one item per line), quote and photo. Inside the text: `**bold**`, `*italic*` and
+`[link text](https://...)`. `src/backoffice/blocks.ts` converts the stored Lexical JSON to blocks
+and back, with no editor library. A body is only rewritten for a language that was edited. If a
+body has formatting the simple editor can't show (tables, embeds, underline...), the screen warns
+that editing keeps the text but simplifies that formatting.
+
+**Media picker**: every photo field (trip and product photos, article cover and photos, home slides)
+opens one picker with search, the Media grid and **อัปโหลดรูป**. Uploads (JPG, PNG, WebP, GIF or AVIF,
+up to 10 MB) need Thai alt text (English is optional and copies the Thai if empty) and go through a
+server action on the Local API, so files land in `MEDIA_DIR` like any other Media upload.
+Server actions accept bodies up to 12 MB for this (`experimental.serverActions.bodySizeLimit`).
 
 ## Database changes / เปลี่ยนโครงสร้างฐานข้อมูล
 
