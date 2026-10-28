@@ -769,7 +769,6 @@ select.inp {
 }
 .view {
   padding: 8px var(--g) 64px;
-  max-width: 1360px;
   width: 100%;
 }
 
