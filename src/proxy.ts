@@ -3,9 +3,24 @@ import { NextResponse, type NextRequest } from 'next/server'
 import { defaultLocale, isLocale } from './i18n/config'
 
 // Sends visitors without a language prefix to /th or /en (based on a saved choice, then the browser)
+// The admin panel opens in Thai unless the user picked another language in their account
+// settings. Payload otherwise follows the browser language, which is English on most PCs.
+const ADMIN_LANG_COOKIE = 'payload-lng'
+
+function adminInThai(request: NextRequest) {
+  if (request.cookies.has(ADMIN_LANG_COOKIE)) return NextResponse.next()
+  const headers = new Headers(request.headers)
+  const cookie = headers.get('cookie')
+  headers.set('cookie', `${cookie ? `${cookie}; ` : ''}${ADMIN_LANG_COOKIE}=th`)
+  const response = NextResponse.next({ request: { headers } })
+  response.cookies.set(ADMIN_LANG_COOKIE, 'th', { path: '/', maxAge: 60 * 60 * 24 * 365 })
+  return response
+}
+
 export function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl
   const first = pathname.split('/')[1] ?? ''
+  if (first === 'admin') return adminInThai(request)
   if (isLocale(first)) return NextResponse.next()
 
   const saved = request.cookies.get('NEXT_LOCALE')?.value
@@ -29,6 +44,7 @@ export function proxy(request: NextRequest) {
 }
 
 export const config = {
-  // Skip the admin panel, APIs, Next.js internals and files with an extension
-  matcher: ['/((?!admin|api|_next|.*\\..*).*)'],
+  // Skip APIs, Next.js internals and files with an extension; the admin panel only gets its
+  // default language set
+  matcher: ['/admin/:path*', '/admin', '/((?!admin|api|_next|.*\\..*).*)'],
 }
