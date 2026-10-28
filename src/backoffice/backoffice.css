@@ -4926,3 +4926,36 @@ select.inp {
   color: var(--mu);
   text-decoration: none;
 }
+
+/* ===== about page ===== */
+.statrow {
+  display: grid;
+  grid-template-columns: 110px minmax(0, 1fr) auto;
+  gap: 0 12px;
+  align-items: end;
+}
+.statrow .ibtn {
+  margin-bottom: 16px;
+}
+.statpv {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(90px, 1fr));
+  gap: 10px;
+  margin: 14px 0;
+}
+.statpv > div {
+  background: var(--hov);
+  border-radius: 12px;
+  padding: 10px;
+  min-width: 0;
+}
+.statpv b {
+  display: block;
+  font-size: 22px;
+  font-weight: 700;
+}
+.statpv small {
+  font-size: 12px;
+  color: var(--mu);
+  overflow-wrap: anywhere;
+}

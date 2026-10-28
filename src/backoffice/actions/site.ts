@@ -5,6 +5,7 @@
 // English; array rows keep their ids so both languages land on the same rows.
 import { revalidatePath } from 'next/cache'
 
+import { blocksToLexical, type Block } from '../blocks'
 import { BO } from '../nav'
 import { SERVICE_ICON_KEYS, type ServiceIcon } from '../website'
 import { actionUser, errorMessage, isSession, type ActionResult } from '../server'
@@ -182,6 +183,89 @@ export async function saveHomeSectionsAction(v: HomeSectionsInput): Promise<Acti
       ...s.as,
     })
     return done(L('บันทึกหน้าแรกแล้ว', 'Home page saved'))
+  } catch (err) {
+    return { ok: false, message: errorMessage(err, L) }
+  }
+}
+
+// ---------- About page ----------
+
+export type AboutInput = {
+  title: Pair
+  intro: Pair
+  image: number | null
+  stats: { id: string | null; value: string; label: Pair }[]
+  content: { th: Block[]; en: Block[] }
+  contentDirty: { th: boolean; en: boolean }
+  seoTitle: Pair
+  seoDescription: Pair
+  seoImage: number | null
+}
+
+export async function saveAboutAction(v: AboutInput): Promise<ActionResult> {
+  const s = await actionUser([...CONTENT])
+  if (!isSession(s)) return s
+  const { L } = s
+  if (v.stats.length > 6)
+    return { ok: false, message: L('ใส่ตัวเลขเด่นได้สูงสุด 6 ข้อ', 'Up to 6 key figures') }
+  if (v.stats.some((x) => !x.value.trim() || !both(x.label)))
+    return {
+      ok: false,
+      message: L('ตัวเลขเด่นต้องมีทั้งตัวเลขและคำอธิบาย', 'Each key figure needs a value and a label'),
+    }
+  for (const l of ['th', 'en'] as const) {
+    if (v.seoTitle[l].length > 70)
+      return { ok: false, message: L('หัวข้อ SEO ยาวเกิน 70 ตัวอักษร', 'SEO title is over 70 characters') }
+    if (v.seoDescription[l].length > 170)
+      return {
+        ok: false,
+        message: L('คำอธิบาย SEO ยาวเกิน 170 ตัวอักษร', 'SEO description is over 170 characters'),
+      }
+  }
+  // The body is only rewritten for a language whose blocks were edited
+  const content = (l: 'th' | 'en') =>
+    v.contentDirty[l] ? { content: blocksToLexical(v.content[l]) as never } : {}
+  try {
+    const th = await s.payload.updateGlobal({
+      slug: 'about-page',
+      locale: 'th',
+      depth: 0,
+      data: {
+        title: opt(v.title.th),
+        intro: opt(v.intro.th),
+        image: v.image,
+        stats: v.stats.map((x) => ({
+          ...(x.id ? { id: x.id } : {}),
+          value: x.value.trim(),
+          label: both(x.label),
+        })),
+        ...content('th'),
+        seo: {
+          title: opt(v.seoTitle.th),
+          description: opt(v.seoDescription.th),
+          image: v.seoImage,
+        },
+      },
+      ...s.as,
+    })
+    await s.payload.updateGlobal({
+      slug: 'about-page',
+      locale: 'en',
+      depth: 0,
+      data: {
+        title: opt(v.title.en),
+        intro: opt(v.intro.en),
+        stats: (th.stats ?? []).map((row, i) => ({
+          id: row.id,
+          value: row.value,
+          label: v.stats[i]?.label.en.trim() || row.label,
+        })),
+        ...content('en'),
+        seo: { title: opt(v.seoTitle.en), description: opt(v.seoDescription.en) },
+      },
+      ...s.as,
+    })
+    return done(L('บันทึกหน้าเกี่ยวกับเราแล้ว', 'About page saved'))
   } catch (err) {
     return { ok: false, message: errorMessage(err, L) }
   }

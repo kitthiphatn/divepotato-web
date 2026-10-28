@@ -5,6 +5,8 @@ import { mediaLibrary, mediaUrl, relId } from '@/backoffice/data'
 import { ymd } from '@/backoffice/format'
 import { WEB_TABS, type WebTab } from '@/backoffice/nav'
 import { requireUser, type Session } from '@/backoffice/server'
+import { lexicalToBlocks, newBlock } from '@/backoffice/blocks'
+import { AboutEditor } from '@/backoffice/ui/AboutEditor'
 import { HomeSectionsForm } from '@/backoffice/ui/HomeSections'
 import { SiteInfoForm } from '@/backoffice/ui/SiteInfo'
 import { SERVICE_ICON_KEYS } from '@/backoffice/website'
@@ -29,6 +31,8 @@ export default async function WebsitePage({
       return <SiteTab s={s} />
     case 'home':
       return <HomeTab s={s} />
+    case 'about':
+      return <AboutTab s={s} />
     default:
       return <SlidesTab s={s} tab={tab === 'articles' || tab === 'ann' ? tab : 'slides'} />
   }
@@ -155,6 +159,42 @@ async function HomeTab({ s }: { s: Session }) {
         showCourses: th.showCourses !== false,
         showNews: th.showNews !== false,
         showFaq: th.showFaq !== false,
+      }}
+    />
+  )
+}
+
+async function AboutTab({ s }: { s: Session }) {
+  const [th, en, library] = await Promise.all([
+    s.payload.findGlobal({ slug: 'about-page', ...loc('th'), ...s.as }),
+    s.payload.findGlobal({ slug: 'about-page', ...loc('en'), ...s.as }),
+    mediaLibrary(s),
+  ])
+  const bth = lexicalToBlocks(th.content)
+  const ben = lexicalToBlocks(en.content)
+  const enRows = new Map((en.stats ?? []).map((r) => [r.id, r]))
+  return (
+    <AboutEditor
+      lang={s.lang}
+      library={library}
+      lossy={{ th: bth.lossy, en: ben.lossy }}
+      value={{
+        title: { th: th.title ?? '', en: en.title ?? '' },
+        intro: { th: th.intro ?? '', en: en.intro ?? '' },
+        image: relId(th.image),
+        stats: (th.stats ?? []).map((r) => ({
+          id: r.id ?? null,
+          value: r.value ?? '',
+          label: { th: r.label ?? '', en: (r.id ? enRows.get(r.id)?.label : '') ?? '' },
+        })),
+        content: {
+          th: bth.blocks.length ? bth.blocks : [newBlock('p')],
+          en: ben.blocks.length ? ben.blocks : [newBlock('p')],
+        },
+        contentDirty: { th: false, en: false },
+        seoTitle: { th: th.seo?.title ?? '', en: en.seo?.title ?? '' },
+        seoDescription: { th: th.seo?.description ?? '', en: en.seo?.description ?? '' },
+        seoImage: relId(th.seo?.image),
       }}
     />
   )
