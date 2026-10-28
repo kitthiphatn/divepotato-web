@@ -4,8 +4,9 @@
 //
 //   npm run seed
 //
-// Safe to run more than once: anything already there (by slug, email or SKU) is skipped, and the
-// booking data is only added to a database that has no bookings yet.
+// Safe to run more than once: anything already there (by slug, email or SKU) is skipped (a demo
+// user without a username gets one), and the booking data is only added to a database that has
+// no bookings yet.
 // Photos: .webp files from SEED_PHOTOS_DIR (default /home/claude/designs/shared/photos) are added
 // to Media when that folder exists; otherwise everything is created without images.
 import fs from 'fs'
@@ -94,15 +95,24 @@ async function seedUsers(payload: Payload) {
   const email = process.env.SEED_ADMIN_EMAIL || 'admin@divepotato.local'
   const password = process.env.SEED_ADMIN_PASSWORD || 'divepotato-demo'
   const accounts = [
-    { email, password, name: 'Dive Potato Admin', role: 'admin' as const },
+    { email, username: 'admin', password, name: 'Dive Potato Admin', role: 'admin' as const },
     {
       email: 'staff@divepotato.local',
+      username: 'staff',
       password: 'divepotato-demo',
       name: 'พนักงานหน้าร้าน (demo)',
       role: 'staff' as const,
     },
     {
+      email: 'editor@divepotato.local',
+      username: 'editor',
+      password: 'divepotato-demo',
+      name: 'บรรณาธิการ (demo)',
+      role: 'editor' as const,
+    },
+    {
       email: 'guide@divepotato.local',
+      username: 'guide',
       password: 'divepotato-demo',
       name: 'ไกด์ดำน้ำ (demo)',
       role: 'guide' as const,
@@ -115,8 +125,26 @@ async function seedUsers(payload: Payload) {
       where: { email: { equals: a.email } },
       limit: 1,
     })
-    const user = existing.docs[0] ?? (await payload.create({ collection: 'users', data: a }))
-    if (!existing.docs[0]) log(`User: ${a.email} (${a.role})`)
+    let user = existing.docs[0]
+    if (!user) {
+      user = await payload.create({ collection: 'users', data: a })
+      log(`User: ${a.username} / ${a.email} (${a.role})`)
+    } else if (!user.username) {
+      // A database from before usernames: give the demo account its username
+      const clash = await payload.count({
+        collection: 'users',
+        where: { username: { equals: a.username } },
+      })
+      if (clash.totalDocs) log(`User ${a.email}: username "${a.username}" is taken, left empty`)
+      else {
+        user = await payload.update({
+          collection: 'users',
+          id: user.id,
+          data: { username: a.username },
+        })
+        log(`User: ${a.email} now signs in as "${a.username}" too`)
+      }
+    }
     if (a.role === 'admin') admin = user
   }
   return admin!
@@ -602,6 +630,29 @@ async function seedGlobals(payload: Payload, photos: Map<string, number>) {
     slug: 'home-sections',
     locale: 'th',
     data: {
+      heroSlides: [
+        {
+          image: photos.get('jack-school.webp') ?? null,
+          title: 'ดำน้ำกับ Dive Potato',
+          subtitle: 'ทริปดำน้ำและคอร์ส PADI ทั้งในไทยและต่างประเทศ',
+          buttonLabel: 'ดูทริปทั้งหมด',
+          buttonLink: '#trips',
+        },
+        {
+          image: photos.get('manta-diver.webp') ?? null,
+          title: 'สิมิลันกับกระเบนราหู',
+          subtitle: 'ทริปค้างเรือ 4 วัน 3 คืน ออกทุกสัปดาห์',
+          buttonLabel: 'จองเลย',
+          buttonLink: '#trips',
+        },
+        {
+          image: photos.get('palau-rock-islands.webp') ?? null,
+          title: 'เริ่มต้นกับ Open Water',
+          subtitle: 'เรียนกับครูไทย กลุ่มเล็ก ได้บัตร PADI',
+          buttonLabel: 'ดูคอร์สเรียน',
+          buttonLink: '#courses',
+        },
+      ],
       services: [
         {
           icon: 'certificate',
@@ -617,6 +668,17 @@ async function seedGlobals(payload: Payload, photos: Map<string, number>) {
     slug: 'home-sections',
     locale: 'en',
     data: {
+      heroSlides: (home.heroSlides ?? []).map((s, i) => ({
+        ...s,
+        image: s.image && typeof s.image === 'object' ? s.image.id : s.image,
+        title: ['Dive with Dive Potato', 'Similan and its mantas', 'Start with Open Water'][i],
+        subtitle: [
+          'PADI courses and dive trips in Thailand and beyond',
+          '4-day liveaboard, every week',
+          'Small groups, friendly instructors, a PADI card',
+        ][i],
+        buttonLabel: ['See all trips', 'Book now', 'See courses'][i],
+      })),
       services: (home.services ?? []).map((s, i) => ({
         ...s,
         title: ['Every PADI level', 'Liveaboards and day trips', 'Overseas expeditions'][i],

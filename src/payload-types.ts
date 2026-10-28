@@ -146,22 +146,34 @@ export interface Config {
   };
 }
 export interface UserAuthOperations {
-  forgotPassword: {
-    email: string;
-    password: string;
-  };
-  login: {
-    email: string;
-    password: string;
-  };
+  forgotPassword:
+    | {
+        email: string;
+      }
+    | {
+        username: string;
+      };
+  login:
+    | {
+        email: string;
+        password: string;
+      }
+    | {
+        password: string;
+        username: string;
+      };
   registerFirstUser: {
-    email: string;
     password: string;
-  };
-  unlock: {
+    username?: string;
     email: string;
-    password: string;
   };
+  unlock:
+    | {
+        email: string;
+      }
+    | {
+        username: string;
+      };
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
@@ -432,12 +444,16 @@ export interface User {
   id: number;
   name?: string | null;
   /**
-   * Admin: everything · Editor: website content, trips, courses · Staff: view/update bookings, customers and departures · Guide: view departures and bookings for manifests only
+   * Admin: everything · Editor: website content, trips, courses · Staff: take bookings, review slips, record payments, look after customers and departures · Guide: view departures and bookings for manifests only
    */
   role: 'admin' | 'editor' | 'staff' | 'guide';
   updatedAt: string;
   createdAt: string;
   email: string;
+  /**
+   * Can be used to sign in instead of the email. Lowercase a-z, 0-9 and . _ - only (up to 32 characters)
+   */
+  username?: string | null;
   resetPasswordToken?: string | null;
   resetPasswordExpiration?: string | null;
   salt?: string | null;
@@ -1011,6 +1027,7 @@ export interface UsersSelect<T extends boolean = true> {
   updatedAt?: T;
   createdAt?: T;
   email?: T;
+  username?: T;
   resetPasswordToken?: T;
   resetPasswordExpiration?: T;
   salt?: T;
@@ -1159,6 +1176,19 @@ export interface SiteSetting {
  */
 export interface HomeSection {
   id: number;
+  /**
+   * The large photos at the top of the home page, shown in order. Also editable in /backoffice.
+   */
+  heroSlides?:
+    | {
+        image?: (number | null) | Media;
+        title: string;
+        subtitle?: string | null;
+        buttonLabel?: string | null;
+        buttonLink?: string | null;
+        id?: string | null;
+      }[]
+    | null;
   services?:
     | {
         icon?: ('mask' | 'boat' | 'certificate' | 'shield' | 'globe' | 'shop') | null;
@@ -1341,6 +1371,16 @@ export interface SiteSettingsSelect<T extends boolean = true> {
  * via the `definition` "home-sections_select".
  */
 export interface HomeSectionsSelect<T extends boolean = true> {
+  heroSlides?:
+    | T
+    | {
+        image?: T;
+        title?: T;
+        subtitle?: T;
+        buttonLabel?: T;
+        buttonLink?: T;
+        id?: T;
+      };
   services?:
     | T
     | {

@@ -45,7 +45,8 @@ export const Bookings: CollectionConfig = {
   access: {
     read: bookingReaders,
     update: bookingEditors,
-    create: adminOnly,
+    // Staff take bookings by phone, LINE and walk-in from the backoffice
+    create: bookingEditors,
     delete: adminOnly,
   },
   defaultSort: '-createdAt',

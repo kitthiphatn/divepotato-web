@@ -14,6 +14,59 @@ export const HomeSections: GlobalConfig = {
   hooks: { afterChange: [revalidateSite] },
   fields: [
     {
+      name: 'heroSlides',
+      label: { th: 'สไลด์หน้าแรก', en: 'Home hero slides' },
+      type: 'array',
+      maxRows: 8,
+      labels: {
+        singular: { th: 'สไลด์', en: 'Slide' },
+        plural: { th: 'สไลด์หน้าแรก', en: 'Home hero slides' },
+      },
+      admin: {
+        description: {
+          th: 'รูปใหญ่ด้านบนของหน้าแรก เลื่อนเปลี่ยนเองตามลำดับ แก้ไขได้ที่หลังบ้าน /backoffice',
+          en: 'The large photos at the top of the home page, shown in order. Also editable in /backoffice.',
+        },
+      },
+      fields: [
+        {
+          name: 'image',
+          label: { th: 'รูปภาพ', en: 'Photo' },
+          type: 'upload',
+          relationTo: 'media',
+        },
+        {
+          name: 'title',
+          label: { th: 'หัวข้อ', en: 'Title' },
+          type: 'text',
+          required: true,
+          localized: true,
+        },
+        {
+          name: 'subtitle',
+          label: { th: 'ข้อความรอง', en: 'Subtitle' },
+          type: 'text',
+          localized: true,
+        },
+        {
+          type: 'row',
+          fields: [
+            {
+              name: 'buttonLabel',
+              label: { th: 'ข้อความบนปุ่ม', en: 'Button text' },
+              type: 'text',
+              localized: true,
+            },
+            {
+              name: 'buttonLink',
+              label: { th: 'ลิงก์ปุ่ม', en: 'Button link' },
+              type: 'text',
+            },
+          ],
+        },
+      ],
+    },
+    {
       name: 'services',
       label: { th: 'จุดเด่นของร้าน', en: 'Highlights' },
       type: 'array',
