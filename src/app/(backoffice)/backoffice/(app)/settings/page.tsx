@@ -1,8 +1,6 @@
 import type { Metadata } from 'next'
-import Link from 'next/link'
 
 import { BALANCE_DAYS } from '@/backoffice/data'
-import { Icon } from '@/backoffice/icons'
 import { lexicalToText } from '@/backoffice/richtext'
 import { requireUser } from '@/backoffice/server'
 import { SettingsForm, type StaffRow } from '@/backoffice/ui/Settings'
@@ -42,12 +40,6 @@ export default async function SettingsPage() {
               'Booking rules, payments, notifications and team',
             )}
           </p>
-        </div>
-        <div className="acts">
-          <Link className="btn o" href="/admin">
-            <Icon name="sliders" />
-            {L('เปิดหลังบ้านแบบเต็ม (สำหรับผู้ดูแลระบบ)', 'Open the full admin (admins)')}
-          </Link>
         </div>
       </div>
       <SettingsForm

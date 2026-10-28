@@ -78,7 +78,6 @@ export function Shell({ nav, counts, user, lang, theme, children }: Props) {
   const tabs = nav.slice(0, 4)
   const more = nav.slice(4)
   const role = ROLE_LABEL[user.role]
-  const isAdmin = user.role === 'admin'
 
   const item = (n: NavItem, short = false) => {
     const c = counts[n.key] ?? 0
@@ -213,17 +212,6 @@ export function Shell({ nav, counts, user, lang, theme, children }: Props) {
             <p className="s">
               {user.email} · {role ? L(role[0], role[1]) : user.role}
             </p>
-            {isAdmin && (
-              <p style={{ marginTop: 14 }}>
-                <Link className="link" href="/admin">
-                  <Icon name="link" />
-                  {L(
-                    'เปิดหลังบ้านแบบเต็ม (สำหรับผู้ดูแลระบบ)',
-                    'Open the full admin (for administrators)',
-                  )}
-                </Link>
-              </p>
-            )}
           </div>
           <form className="acts" action={logoutAction}>
             <button className="btn o" type="button" onClick={() => setMenu(false)}>
