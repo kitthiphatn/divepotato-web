@@ -7,9 +7,10 @@ import { WEB_TABS, type WebTab } from '@/backoffice/nav'
 import { requireUser, type Session } from '@/backoffice/server'
 import { lexicalToBlocks, newBlock } from '@/backoffice/blocks'
 import { AboutEditor } from '@/backoffice/ui/AboutEditor'
+import { FaqManager, type FaqRow } from '@/backoffice/ui/Faqs'
 import { HomeSectionsForm } from '@/backoffice/ui/HomeSections'
 import { SiteInfoForm } from '@/backoffice/ui/SiteInfo'
-import { SERVICE_ICON_KEYS } from '@/backoffice/website'
+import { FAQ_CATS, SERVICE_ICON_KEYS } from '@/backoffice/website'
 import { WebsiteEditor, type ArticleRow } from '@/backoffice/ui/Website'
 
 export const metadata: Metadata = { title: 'หน้าเว็บไซต์ · Website' }
@@ -33,6 +34,8 @@ export default async function WebsitePage({
       return <HomeTab s={s} />
     case 'about':
       return <AboutTab s={s} />
+    case 'faq':
+      return <FaqTab s={s} />
     default:
       return <SlidesTab s={s} tab={tab === 'articles' || tab === 'ann' ? tab : 'slides'} />
   }
@@ -198,4 +201,27 @@ async function AboutTab({ s }: { s: Session }) {
       }}
     />
   )
+}
+
+async function FaqTab({ s }: { s: Session }) {
+  const opts = { pagination: false as const, sort: 'order', depth: 0, ...s.as }
+  const [th, en] = await Promise.all([
+    s.payload.find({ collection: 'faqs', ...opts, ...loc('th') }),
+    s.payload.find({ collection: 'faqs', ...opts, ...loc('en') }),
+  ])
+  const enById = new Map(en.docs.map((d) => [d.id, d]))
+  const faqs: FaqRow[] = th.docs.map((d) => {
+    const e = enById.get(d.id)
+    return {
+      id: d.id,
+      question: { th: d.question ?? '', en: e?.question ?? '' },
+      answer: { th: d.answer ?? '', en: e?.answer ?? '' },
+      category: FAQ_CATS.find((c) => c === d.category) ?? 'general',
+      showOnHome: Boolean(d.showOnHome),
+      order: d.order ?? 10,
+    }
+  })
+  // Remount with fresh rows after a save (the list keeps its own copy for reordering)
+  const version = th.docs.map((d) => `${d.id}:${d.updatedAt}`).join('|')
+  return <FaqManager key={version} lang={s.lang} faqs={faqs} />
 }

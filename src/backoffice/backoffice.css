@@ -4959,3 +4959,64 @@ select.inp {
   color: var(--mu);
   overflow-wrap: anywhere;
 }
+
+/* ===== FAQs ===== */
+.row.frow {
+  grid-template-columns: 80px minmax(0, 1fr) minmax(0, 180px) 100px 20px;
+  cursor: pointer;
+}
+.row.frow .blact .ibtn {
+  width: 32px;
+  height: 32px;
+}
+.faqpv {
+  margin: 18px 0 4px;
+  background: var(--hov);
+  border-radius: var(--rs);
+  padding: 14px;
+}
+.faqpv .lab {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  margin-bottom: 8px;
+}
+.faqpv details {
+  background: var(--card);
+  border-radius: 12px;
+  padding: 12px 14px;
+}
+.faqpv summary {
+  list-style: none;
+  font-weight: 600;
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  cursor: pointer;
+}
+.faqpv summary::-webkit-details-marker {
+  display: none;
+}
+.faqpv details p {
+  margin-top: 8px;
+  color: var(--mu);
+  white-space: pre-line;
+}
+@media (max-width: 760px) {
+  .row.frow {
+    grid-template-columns: auto minmax(0, 1fr) auto;
+  }
+  .row.frow .blact {
+    grid-column: 1;
+    grid-row: 1 / span 2;
+    flex-direction: column;
+  }
+  .row.frow .c2 {
+    grid-column: 2;
+    grid-row: 1 / span 2;
+    padding-left: 0;
+  }
+  .row.frow .st {
+    grid-column: 3;
+  }
+}
