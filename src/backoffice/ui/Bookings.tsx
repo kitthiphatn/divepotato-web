@@ -35,6 +35,7 @@ import { Icon } from '../icons'
 import { BO } from '../nav'
 import type { ActionResult } from '../server'
 import { StatusPill } from './bits'
+import { SubTabs } from './fields'
 import { Modal, Soon } from './Modal'
 import { useToast } from './Toast'
 
@@ -272,6 +273,17 @@ export function BookingsClient(props: BookingsProps) {
           </button>
         </div>
       </div>
+      <SubTabs
+        items={[
+          { href: `${BO}/bookings`, label: L('การจอง', 'Bookings'), icon: 'ticket', on: true },
+          {
+            href: `${BO}/bookings/payments`,
+            label: L('การชำระเงิน', 'Payments'),
+            icon: 'wallet',
+            on: false,
+          },
+        ]}
+      />
       <div className="toolbar">
         <label className="search">
           <Icon name="search" />

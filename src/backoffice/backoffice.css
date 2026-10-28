@@ -5308,3 +5308,77 @@ button.tcard {
     grid-row: 2;
   }
 }
+
+/* ===== payments ===== */
+.row.payrow {
+  grid-template-columns: 56px minmax(0, 1.4fr) minmax(0, 1.4fr) 110px 120px 110px;
+}
+.payrow .sl .slipth,
+.payrow .sl .noimg {
+  width: 48px;
+  height: 48px;
+  border-radius: 10px;
+  overflow: hidden;
+  display: grid;
+  place-items: center;
+  padding: 0;
+}
+.payrow .sl .slipth img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.payrow .go {
+  justify-self: end;
+}
+.payrow .amt b {
+  text-align: right;
+}
+.toolbar .pfilt {
+  margin: 0;
+  flex: none;
+  width: 200px;
+}
+.pager {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 22px;
+  border-top: 1px solid var(--ln);
+}
+.pager > :last-child {
+  justify-self: end;
+}
+p.pager {
+  display: block;
+  margin: 0;
+}
+@media (max-width: 760px) {
+  .row.payrow {
+    grid-template-columns: 48px minmax(0, 1fr) auto;
+  }
+  .payrow .sl {
+    grid-row: 1 / span 3;
+  }
+  .payrow .who,
+  .payrow .c2 {
+    grid-column: 2;
+    padding-left: 0 !important;
+  }
+  .payrow .st {
+    grid-column: 3;
+    grid-row: 1;
+  }
+  .payrow .amt {
+    grid-column: 3;
+    grid-row: 2;
+  }
+  .payrow .go {
+    grid-column: 2 / span 2;
+    grid-row: 3;
+  }
+  .toolbar .pfilt {
+    width: 100%;
+  }
+}

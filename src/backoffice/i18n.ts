@@ -51,6 +51,19 @@ export const PROVIDER_LABEL: Record<string, Pair> = {
   cash: ['เงินสดที่ร้าน', 'Cash at shop'],
   transfer: ['โอนผ่านธนาคาร', 'Bank transfer'],
 }
+// Payment record statuses (Payments `status`) and their pill colours
+export const PAY_STATUS_LABEL: Record<string, Pair> = {
+  pending: ['รอตรวจสอบ', 'Pending'],
+  succeeded: ['สำเร็จ', 'Succeeded'],
+  failed: ['ไม่สำเร็จ', 'Failed'],
+  rejected: ['ปฏิเสธสลิป', 'Rejected'],
+}
+export const PAY_STATUS_CLASS: Record<string, string> = {
+  pending: 'st-review',
+  succeeded: 'st-paid',
+  failed: 'st-cancelled',
+  rejected: 'st-cancelled',
+}
 export const KIND_LABEL: Record<string, Pair> = {
   deposit: ['มัดจำ', 'Deposit'],
   balance: ['ยอดคงเหลือ', 'Balance'],
