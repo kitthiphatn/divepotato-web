@@ -5,7 +5,9 @@ import { mediaLibrary, mediaUrl, relId } from '@/backoffice/data'
 import { ymd } from '@/backoffice/format'
 import { WEB_TABS, type WebTab } from '@/backoffice/nav'
 import { requireUser, type Session } from '@/backoffice/server'
+import { HomeSectionsForm } from '@/backoffice/ui/HomeSections'
 import { SiteInfoForm } from '@/backoffice/ui/SiteInfo'
+import { SERVICE_ICON_KEYS } from '@/backoffice/website'
 import { WebsiteEditor, type ArticleRow } from '@/backoffice/ui/Website'
 
 export const metadata: Metadata = { title: 'หน้าเว็บไซต์ · Website' }
@@ -25,6 +27,8 @@ export default async function WebsitePage({
   switch (tab) {
     case 'site':
       return <SiteTab s={s} />
+    case 'home':
+      return <HomeTab s={s} />
     default:
       return <SlidesTab s={s} tab={tab === 'articles' || tab === 'ann' ? tab : 'slides'} />
   }
@@ -123,6 +127,34 @@ async function SiteTab({ s }: { s: Session }) {
         },
         footerNote: p(th.footerNote, en.footerNote),
         analyticsId: th.analyticsId ?? '',
+      }}
+    />
+  )
+}
+
+async function HomeTab({ s }: { s: Session }) {
+  const [th, en] = await Promise.all([
+    s.payload.findGlobal({ slug: 'home-sections', ...loc('th'), ...s.as }),
+    s.payload.findGlobal({ slug: 'home-sections', ...loc('en'), ...s.as }),
+  ])
+  const enRows = new Map((en.services ?? []).map((r) => [r.id, r]))
+  return (
+    <HomeSectionsForm
+      lang={s.lang}
+      value={{
+        services: (th.services ?? []).map((r) => {
+          const e = r.id ? enRows.get(r.id) : undefined
+          return {
+            id: r.id ?? null,
+            icon: SERVICE_ICON_KEYS.find((k) => k === r.icon) ?? 'mask',
+            title: { th: r.title ?? '', en: e?.title ?? '' },
+            text: { th: r.text ?? '', en: e?.text ?? '' },
+          }
+        }),
+        showTrips: th.showTrips !== false,
+        showCourses: th.showCourses !== false,
+        showNews: th.showNews !== false,
+        showFaq: th.showFaq !== false,
       }}
     />
   )

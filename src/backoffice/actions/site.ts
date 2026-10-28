@@ -6,6 +6,7 @@
 import { revalidatePath } from 'next/cache'
 
 import { BO } from '../nav'
+import { SERVICE_ICON_KEYS, type ServiceIcon } from '../website'
 import { actionUser, errorMessage, isSession, type ActionResult } from '../server'
 
 type Pair = { th: string; en: string }
@@ -121,6 +122,66 @@ export async function saveSiteSettingsAction(v: SiteSettingsInput): Promise<Acti
       ...s.as,
     })
     return done(L('บันทึกข้อมูลร้านแล้ว', 'Shop info saved'))
+  } catch (err) {
+    return { ok: false, message: errorMessage(err, L) }
+  }
+}
+
+// ---------- home page sections (everything except the hero slides) ----------
+
+export type HomeSectionsInput = {
+  services: { id: string | null; icon: ServiceIcon; title: Pair; text: Pair }[]
+  showTrips: boolean
+  showCourses: boolean
+  showNews: boolean
+  showFaq: boolean
+}
+
+export async function saveHomeSectionsAction(v: HomeSectionsInput): Promise<ActionResult> {
+  const s = await actionUser([...CONTENT])
+  if (!isSession(s)) return s
+  const { L } = s
+  if (v.services.length > 6)
+    return { ok: false, message: L('ใส่จุดเด่นได้สูงสุด 6 ข้อ', 'Up to 6 highlights') }
+  if (v.services.some((x) => !both(x.title)))
+    return { ok: false, message: L('ใส่หัวข้อให้ทุกจุดเด่น', 'Every highlight needs a title') }
+  const icon = (i: string) =>
+    (SERVICE_ICON_KEYS as readonly string[]).includes(i) ? (i as ServiceIcon) : 'mask'
+  try {
+    // Only the fields sent are changed; the hero slides stay as they are
+    const th = await s.payload.updateGlobal({
+      slug: 'home-sections',
+      locale: 'th',
+      depth: 0,
+      data: {
+        services: v.services.map((x) => ({
+          ...(x.id ? { id: x.id } : {}),
+          icon: icon(x.icon),
+          title: both(x.title),
+          text: opt(x.text.th),
+        })),
+        showTrips: v.showTrips,
+        showCourses: v.showCourses,
+        showNews: v.showNews,
+        showFaq: v.showFaq,
+      },
+      ...s.as,
+    })
+    await s.payload.updateGlobal({
+      slug: 'home-sections',
+      locale: 'en',
+      depth: 0,
+      data: {
+        services: (th.services ?? []).map((row, i) => ({
+          id: row.id,
+          icon: row.icon,
+          title: v.services[i]?.title.en.trim() || row.title,
+          text: opt(v.services[i]?.text.en),
+        })),
+      },
+      ...s.as,
+    })
+    return done(L('บันทึกหน้าแรกแล้ว', 'Home page saved'))
   } catch (err) {
     return { ok: false, message: errorMessage(err, L) }
   }
