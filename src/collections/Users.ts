@@ -34,6 +34,10 @@ export const Users: CollectionConfig = {
     },
   },
   access: {
+    // Only admins may open the Payload admin panel (/admin); the team works in /backoffice.
+    // Payload sends anyone else to /admin/unauthorized, which src/proxy.ts redirects to
+    // /backoffice. This only gates the panel: the REST/Local API keep the rules below.
+    admin: ({ req: { user } }) => isAdmin(user),
     read: adminOrSelf,
     create: adminOnly,
     update: adminOrSelf,
