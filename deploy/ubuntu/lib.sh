@@ -39,9 +39,9 @@ require_root() {
 # Runs a command as the app user (directly when we already are that user, as in tests)
 as_app() {
   if [ "$(id -un)" = "$APP_USER" ]; then
-    env npm_config_cache="$BASE_DIR/.npm" "$@"
+    env npm_config_cache="$BASE_DIR/.npm" npm_config_update_notifier=false "$@"
   else
-    sudo -u "$APP_USER" -H env npm_config_cache="$BASE_DIR/.npm" "$@"
+    sudo -u "$APP_USER" -H env npm_config_cache="$BASE_DIR/.npm" npm_config_update_notifier=false "$@"
   fi
 }
 
