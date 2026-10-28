@@ -15,6 +15,7 @@ import type {
 } from '@/payload-types'
 
 import { ymd } from './format'
+import { CERT_RANK } from './i18n'
 import type { Session } from './server'
 
 type Rel<T> = number | T | null | undefined
@@ -282,4 +283,29 @@ export async function bookingDefaults(s: Session) {
     overrideAccess: true,
   })
   return { depositPct: g.depositPct ?? 30, holdMinutes: g.holdMinutes ?? 15 }
+}
+
+// Per-customer figures for the customer list and profile. The customer record has no cert or
+// suit size, so these come from the participant with the customer's name (or the first one).
+export function customerStats(customerId: number, all: BookingVM[]) {
+  const bs = all
+    .filter((b) => b.customer?.id === customerId)
+    .sort((a, b) => (b.departure?.start ?? '').localeCompare(a.departure?.start ?? ''))
+  let cert = ''
+  let suit = ''
+  for (const b of bs) {
+    const p =
+      b.participants.find((x) => x.name.trim() === b.customer?.name.trim()) ?? b.participants[0]
+    if (p && CERT_RANK.indexOf(p.certLevel) > CERT_RANK.indexOf(cert)) cert = p.certLevel
+    if (p?.suitSize && !suit) suit = p.suitSize
+  }
+  return {
+    bookings: bs,
+    spent: bs.reduce((sum, b) => sum + paidOf(b), 0),
+    last: bs.find((b) => b.departure)?.departure?.start ?? null,
+    first: bs.map((b) => b.created).sort()[0] ?? null,
+    companions: bs.reduce((n, b) => n + Math.max(0, b.participants.length - 1), 0),
+    cert,
+    suit,
+  }
 }
