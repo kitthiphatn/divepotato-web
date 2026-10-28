@@ -5445,6 +5445,9 @@ p.pager {
     grid-row: 2;
     padding-left: 0;
   }
+  .row.alog .usr {
+    grid-row: 3;
+  }
   .row.alog .chg {
     grid-column: 1 / span 2;
   }

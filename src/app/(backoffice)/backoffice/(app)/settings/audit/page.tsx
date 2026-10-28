@@ -192,7 +192,7 @@ export default async function AuditPage({
                     {href ? <Link href={href}>#{g.docId}</Link> : `#${g.docId}`}
                   </b>
                 </span>
-                <span className="c2 hide-m">
+                <span className="c2 usr">
                   <small>{u ? u.name || u.email : L('ระบบ', 'System')}</small>
                 </span>
                 <span className="chg">
