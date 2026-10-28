@@ -1,0 +1,5 @@
+src/migrations
+src/payload-types.ts
+src/app/(payload)
+.next
+node_modules

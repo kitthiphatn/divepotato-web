@@ -1,0 +1,55 @@
+{
+  "name": "divepotato-web",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Dive Potato Scuba Diving website and booking backend (Next.js + Payload CMS)",
+  "license": "UNLICENSED",
+  "type": "module",
+  "scripts": {
+    "dev": "cross-env NODE_OPTIONS=--no-deprecation next dev -p 3006",
+    "build": "cross-env NODE_OPTIONS=\"--no-deprecation --max-old-space-size=4096\" next build",
+    "start": "cross-env NODE_OPTIONS=--no-deprecation next start",
+    "lint": "cross-env NODE_OPTIONS=--no-deprecation eslint .",
+    "typecheck": "tsc --noEmit",
+    "payload": "cross-env NODE_OPTIONS=--no-deprecation payload",
+    "generate:importmap": "cross-env NODE_OPTIONS=--no-deprecation payload generate:importmap",
+    "generate:types": "cross-env NODE_OPTIONS=--no-deprecation payload generate:types",
+    "seed": "cross-env NODE_OPTIONS=--no-deprecation payload run scripts/seed-divepotato.ts",
+    "seed:production": "cross-env NODE_ENV=production DATABASE_URL=file:./data/production.db MEDIA_DIR=./media-production NODE_OPTIONS=--no-deprecation payload run scripts/seed-divepotato.ts"
+  },
+  "dependencies": {
+    "@fontsource/anuphan": "5.3.0",
+    "@fontsource/ibm-plex-mono": "5.3.0",
+    "@fontsource/ibm-plex-sans-thai": "5.3.0",
+    "@payloadcms/db-sqlite": "3.90.2",
+    "@payloadcms/next": "3.90.2",
+    "@payloadcms/richtext-lexical": "3.90.2",
+    "@payloadcms/translations": "3.90.2",
+    "@payloadcms/ui": "3.90.2",
+    "cross-env": "^7.0.3",
+    "dotenv": "16.4.7",
+    "graphql": "^16.8.1",
+    "next": "16.4.1",
+    "next-themes": "0.4.6",
+    "payload": "3.90.2",
+    "react": "19.2.6",
+    "react-dom": "19.2.6",
+    "sanitize-html": "^2.18.0",
+    "sharp": "0.35.5"
+  },
+  "devDependencies": {
+    "@tailwindcss/postcss": "4.3.3",
+    "@types/node": "22.19.9",
+    "@types/react": "19.2.14",
+    "@types/react-dom": "19.2.3",
+    "@types/sanitize-html": "^2.16.2",
+    "eslint": "^9.16.0",
+    "eslint-config-next": "16.4.1",
+    "prettier": "^3.4.2",
+    "tailwindcss": "4.3.3",
+    "typescript": "5.7.3"
+  },
+  "engines": {
+    "node": ">=20.9.0"
+  }
+}
