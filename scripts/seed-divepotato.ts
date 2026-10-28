@@ -102,6 +102,12 @@ async function seedUsers(payload: Payload) {
       role: 'staff' as const,
     },
     {
+      email: 'editor@divepotato.local',
+      password: 'divepotato-demo',
+      name: 'บรรณาธิการ (demo)',
+      role: 'editor' as const,
+    },
+    {
       email: 'guide@divepotato.local',
       password: 'divepotato-demo',
       name: 'ไกด์ดำน้ำ (demo)',

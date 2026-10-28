@@ -21,6 +21,7 @@ npm run dev            # http://localhost:3006 and http://localhost:3006/admin
 |---|---|---|
 | Admin (ผู้ดูแลระบบ) | `admin@divepotato.local` (or `SEED_ADMIN_EMAIL`) | `divepotato-demo` (or `SEED_ADMIN_PASSWORD`) |
 | Staff (พนักงาน) | `staff@divepotato.local` | `divepotato-demo` |
+| Editor (บรรณาธิการ) | `editor@divepotato.local` | `divepotato-demo` |
 | Guide (ไกด์) | `guide@divepotato.local` | `divepotato-demo` |
 
 Set `SEED_PHOTOS_DIR` to a folder of the shop's `.webp` photos to add them to Media while seeding.
