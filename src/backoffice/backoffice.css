@@ -4327,7 +4327,7 @@ select.inp {
     display: none;
   }
   .vrow {
-    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) 40px;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
     border: 1px solid var(--ln);
     border-radius: 16px;
     padding: 10px 12px;
@@ -4346,6 +4346,8 @@ select.inp {
   .vrow > .ibtn {
     grid-column: 3;
     grid-row: 1;
+    justify-self: end;
+    align-self: end;
   }
 }
 
@@ -4699,4 +4701,13 @@ select.inp {
 .lg-forgot:hover {
   color: var(--ink);
   text-decoration: underline;
+}
+.pgrid .up > span {
+  display: grid;
+  justify-items: center;
+  gap: 4px;
+  padding: 0 6px;
+}
+.upbox .hint {
+  margin-top: 6px;
 }

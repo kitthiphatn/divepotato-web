@@ -131,7 +131,10 @@ export function MediaPicker({
           <img src={draft.preview} alt="" />
           <div>
             <p className="small muted">
-              {draft.file.name} · {(draft.file.size / 1024 / 1024).toFixed(1)} MB
+              {draft.file.name} ·{' '}
+              {draft.file.size < 1024 * 1024
+                ? `${Math.max(1, Math.round(draft.file.size / 1024))} KB`
+                : `${(draft.file.size / 1024 / 1024).toFixed(1)} MB`}
             </p>
             <label className="field">
               <span>{L('คำอธิบายรูป (ไทย) *', 'Alt text (Thai) *')}</span>

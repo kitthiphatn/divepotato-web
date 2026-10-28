@@ -69,6 +69,8 @@ export function BlockEditor({
     const next = [...blocks]
     next.splice(at < 0 ? blocks.length : at + 1, 0, b)
     onChange(next)
+    // The next block added goes after this one
+    setFocus(b.key)
     if (kind === 'img') setPicking(b.key)
     else requestAnimationFrame(() => refs.current.get(b.key)?.focus())
   }
