@@ -602,6 +602,29 @@ async function seedGlobals(payload: Payload, photos: Map<string, number>) {
     slug: 'home-sections',
     locale: 'th',
     data: {
+      heroSlides: [
+        {
+          image: photos.get('jack-school.webp') ?? null,
+          title: 'ดำน้ำกับ Dive Potato',
+          subtitle: 'ทริปดำน้ำและคอร์ส PADI ทั้งในไทยและต่างประเทศ',
+          buttonLabel: 'ดูทริปทั้งหมด',
+          buttonLink: '#trips',
+        },
+        {
+          image: photos.get('manta-diver.webp') ?? null,
+          title: 'สิมิลันกับกระเบนราหู',
+          subtitle: 'ทริปค้างเรือ 4 วัน 3 คืน ออกทุกสัปดาห์',
+          buttonLabel: 'จองเลย',
+          buttonLink: '#trips',
+        },
+        {
+          image: photos.get('palau-rock-islands.webp') ?? null,
+          title: 'เริ่มต้นกับ Open Water',
+          subtitle: 'เรียนกับครูไทย กลุ่มเล็ก ได้บัตร PADI',
+          buttonLabel: 'ดูคอร์สเรียน',
+          buttonLink: '#courses',
+        },
+      ],
       services: [
         {
           icon: 'certificate',
@@ -617,6 +640,17 @@ async function seedGlobals(payload: Payload, photos: Map<string, number>) {
     slug: 'home-sections',
     locale: 'en',
     data: {
+      heroSlides: (home.heroSlides ?? []).map((s, i) => ({
+        ...s,
+        image: s.image && typeof s.image === 'object' ? s.image.id : s.image,
+        title: ['Dive with Dive Potato', 'Similan and its mantas', 'Start with Open Water'][i],
+        subtitle: [
+          'PADI courses and dive trips in Thailand and beyond',
+          '4-day liveaboard, every week',
+          'Small groups, friendly instructors, a PADI card',
+        ][i],
+        buttonLabel: ['See all trips', 'Book now', 'See courses'][i],
+      })),
       services: (home.services ?? []).map((s, i) => ({
         ...s,
         title: ['Every PADI level', 'Liveaboards and day trips', 'Overseas expeditions'][i],

@@ -432,7 +432,7 @@ export interface User {
   id: number;
   name?: string | null;
   /**
-   * Admin: everything · Editor: website content, trips, courses · Staff: view/update bookings, customers and departures · Guide: view departures and bookings for manifests only
+   * Admin: everything · Editor: website content, trips, courses · Staff: take bookings, review slips, record payments, look after customers and departures · Guide: view departures and bookings for manifests only
    */
   role: 'admin' | 'editor' | 'staff' | 'guide';
   updatedAt: string;
@@ -1159,6 +1159,19 @@ export interface SiteSetting {
  */
 export interface HomeSection {
   id: number;
+  /**
+   * The large photos at the top of the home page, shown in order. Also editable in /backoffice.
+   */
+  heroSlides?:
+    | {
+        image?: (number | null) | Media;
+        title: string;
+        subtitle?: string | null;
+        buttonLabel?: string | null;
+        buttonLink?: string | null;
+        id?: string | null;
+      }[]
+    | null;
   services?:
     | {
         icon?: ('mask' | 'boat' | 'certificate' | 'shield' | 'globe' | 'shop') | null;
@@ -1341,6 +1354,16 @@ export interface SiteSettingsSelect<T extends boolean = true> {
  * via the `definition` "home-sections_select".
  */
 export interface HomeSectionsSelect<T extends boolean = true> {
+  heroSlides?:
+    | T
+    | {
+        image?: T;
+        title?: T;
+        subtitle?: T;
+        buttonLabel?: T;
+        buttonLink?: T;
+        id?: T;
+      };
   services?:
     | T
     | {
