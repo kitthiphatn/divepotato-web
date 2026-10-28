@@ -137,7 +137,9 @@ export const money = (n: number | null | undefined) =>
 export function initials(name: string | null | undefined) {
   const n = (name ?? '').trim()
   if (!n) return '?'
-  const p = n.split(/\s+/)
+  // Skip words such as "(demo)" that don't start with a letter
+  const words = n.split(/\s+/).filter((w) => /^[\p{L}]/u.test(w))
+  const p = words.length ? words : [n]
   if (/[ก-๙]/.test(n)) {
     const strip = (x: string) => x.replace(/[ัิ-ฺ็-๎]/g, '')
     return strip(p[0]).slice(0, 1) + (p[1] ? strip(p[1]).slice(0, 1) : '')
