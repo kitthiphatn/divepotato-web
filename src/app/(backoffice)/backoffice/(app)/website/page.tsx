@@ -3,13 +3,16 @@ import type { Metadata } from 'next'
 import type { SlideInput } from '@/backoffice/actions/website'
 import { mediaLibrary, mediaUrl, relId } from '@/backoffice/data'
 import { ymd } from '@/backoffice/format'
-import { requireUser } from '@/backoffice/server'
+import { WEB_TABS, type WebTab } from '@/backoffice/nav'
+import { requireUser, type Session } from '@/backoffice/server'
+import { SiteInfoForm } from '@/backoffice/ui/SiteInfo'
 import { WebsiteEditor, type ArticleRow } from '@/backoffice/ui/Website'
 
 export const metadata: Metadata = { title: 'หน้าเว็บไซต์ · Website' }
 
-const TABS = ['slides', 'articles', 'ann'] as const
+const loc = (locale: 'th' | 'en') => ({ locale, fallbackLocale: false as const, depth: 0 })
 
+// /backoffice/website?tab=... : one screen per tab; each loads only what it shows
 export default async function WebsitePage({
   searchParams,
 }: {
@@ -17,9 +20,17 @@ export default async function WebsitePage({
 }) {
   const s = await requireUser(['admin', 'editor'])
   const sp = await searchParams
-  const tab = TABS.find((t) => t === sp.tab) ?? 'slides'
-  const loc = (locale: 'th' | 'en') => ({ locale, fallbackLocale: false as const, depth: 0 })
+  const tab: WebTab = WEB_TABS.find((t) => t === sp.tab) ?? 'slides'
 
+  switch (tab) {
+    case 'site':
+      return <SiteTab s={s} />
+    default:
+      return <SlidesTab s={s} tab={tab === 'articles' || tab === 'ann' ? tab : 'slides'} />
+  }
+}
+
+async function SlidesTab({ s, tab }: { s: Session; tab: 'slides' | 'articles' | 'ann' }) {
   const [homeTh, homeEn, annTh, annEn, posts, library] = await Promise.all([
     s.payload.findGlobal({ slug: 'home-sections', ...loc('th'), ...s.as }),
     s.payload.findGlobal({ slug: 'home-sections', ...loc('en'), ...s.as }),
@@ -72,6 +83,47 @@ export default async function WebsitePage({
       }}
       articles={articles}
       library={library}
+    />
+  )
+}
+
+async function SiteTab({ s }: { s: Session }) {
+  const [th, en, library] = await Promise.all([
+    s.payload.findGlobal({ slug: 'site-settings', ...loc('th'), ...s.as }),
+    s.payload.findGlobal({ slug: 'site-settings', ...loc('en'), ...s.as }),
+    mediaLibrary(s),
+  ])
+  const c = th.contact ?? {}
+  const p = (a?: string | null, b?: string | null) => ({ th: a ?? '', en: b ?? '' })
+  return (
+    <SiteInfoForm
+      lang={s.lang}
+      library={library}
+      value={{
+        siteName: p(th.siteName, en.siteName),
+        logo: relId(th.logo),
+        favicon: relId(th.favicon),
+        contact: {
+          phone: c.phone ?? '',
+          lineId: c.lineId ?? '',
+          lineUrl: c.lineUrl ?? '',
+          email: c.email ?? '',
+          whatsappUrl: c.whatsappUrl ?? '',
+          facebookUrl: c.facebookUrl ?? '',
+          instagramUrl: c.instagramUrl ?? '',
+          tiktokUrl: c.tiktokUrl ?? '',
+          youtubeUrl: c.youtubeUrl ?? '',
+          hours: p(c.hours, en.contact?.hours),
+          address: p(c.address, en.contact?.address),
+        },
+        hero: {
+          title: p(th.hero?.title, en.hero?.title),
+          subtitle: p(th.hero?.subtitle, en.hero?.subtitle),
+          background: relId(th.hero?.background),
+        },
+        footerNote: p(th.footerNote, en.footerNote),
+        analyticsId: th.analyticsId ?? '',
+      }}
     />
   )
 }

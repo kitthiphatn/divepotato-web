@@ -95,6 +95,21 @@ export const NAV: NavItem[] = [
   },
 ]
 
+// Tabs of the Website section (/backoffice/website?tab=...)
+export const WEB_TABS = [
+  'slides',
+  'home',
+  'articles',
+  'ann',
+  'popup',
+  'about',
+  'faq',
+  'cookie',
+  'site',
+  'media',
+] as const
+export type WebTab = (typeof WEB_TABS)[number]
+
 export const navFor = (role: Role) => NAV.filter((n) => n.roles.includes(role))
 
 // Where a role lands after signing in (editors have no Today screen: they can't read bookings)

@@ -14,11 +14,13 @@ import { fd } from '../format'
 import { pair, POST_CAT_LABEL, translator, type Lang, type PostCategory } from '../i18n'
 import { Icon } from '../icons'
 import { BO } from '../nav'
+import { WebsiteHead } from './fields'
 import { MediaPicker, useLibrary } from './MediaPicker'
 import { useToast } from './Toast'
 
 type Loc = 'th' | 'en'
 type Tab = 'slides' | 'articles' | 'ann'
+const LOCAL = ['slides', 'articles', 'ann'] as const
 export type ArticleRow = {
   id: number
   title: string
@@ -89,27 +91,21 @@ export function WebsiteEditor({
       toast(r.message, r.ok)
     })
 
-  const tabs: [Tab, string, string][] = [
-    ['slides', L('สไลด์หน้าแรก', 'Home slides'), 'image'],
-    ['articles', L('บทความ', 'Articles'), 'edit'],
-    ['ann', L('แถบประกาศ', 'Announcement'), 'mega'],
-  ]
   const annText = (loc: Loc) => ann.message[loc] || ann.message.th || ann.message.en
 
   return (
     <>
-      <div className="ph">
-        <div>
-          <h1>{L('หน้าเว็บไซต์', 'Website')}</h1>
-          <p className="lede">
-            {L(
-              'แก้ไขสิ่งที่ลูกค้าเห็นบนหน้าแรกของเว็บไซต์',
-              'Edit what customers see on the home page',
-            )}
-          </p>
-        </div>
-        <div className="acts">
-          {tab === 'articles' ? (
+      <WebsiteHead
+        lang={lang}
+        tab={tab}
+        local={LOCAL}
+        onLocal={(t) => go(t as Tab)}
+        lede={L(
+          'แก้ไขสิ่งที่ลูกค้าเห็นบนหน้าแรกของเว็บไซต์',
+          'Edit what customers see on the home page',
+        )}
+        acts={
+          tab === 'articles' ? (
             <Link className="btn y" href={`${BO}/website/articles/new`}>
               <Icon name="plus" />
               {L('เขียนบทความใหม่', 'New article')}
@@ -119,17 +115,9 @@ export function WebsiteEditor({
               <Icon name="check" />
               {L('บันทึกและเผยแพร่', 'Save & publish')}
             </button>
-          )}
-        </div>
-      </div>
-      <div className="seg lgs" style={{ marginBottom: 20 }}>
-        {tabs.map(([k, label, ic]) => (
-          <button key={k} type="button" aria-pressed={tab === k} onClick={() => go(k)}>
-            <Icon name={ic} />
-            {label}
-          </button>
-        ))}
-      </div>
+          )
+        }
+      />
 
       {tab === 'slides' && (
         <div className="sl-edit">
