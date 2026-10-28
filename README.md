@@ -120,6 +120,52 @@ up to 10 MB) need Thai alt text (English is optional and copies the Thai if empt
 server action on the Local API, so files land in `MEDIA_DIR` like any other Media upload.
 Server actions accept bodies up to 12 MB for this (`experimental.serverActions.bodySizeLimit`).
 
+## Public site / หน้าเว็บไซต์
+
+`/th` (default) and `/en`, in the "design 11" style (white / yellow `#FFC20E` / black). Every page
+has a TH/EN switch, and every word on it comes from the backoffice:
+
+| Page | Path | Data |
+|---|---|---|
+| Home | `/{th,en}` | `home-sections` (hero slides, which sections show), `site-settings`, `about-page` stats, courses, trips, open departures, products, latest 3 published articles, FAQ |
+| Courses | `/courses`, `/courses/<slug>` | `courses` (level chips derived from the PADI code), course departures |
+| Trips | `/trips`, `/trips/<slug>` | `trips` (filter by type, month, people), departures, dive sites, cancellation policy from `booking-settings` |
+| Equipment | `/equipment`, `/equipment/<slug>` | `products` + `product-variants` (sizes, price, stock); order and questions go to LINE |
+| Articles | `/articles`, `/articles/<slug>` | `posts` + categories (filter, table of contents, related posts, booking CTA, per-article SEO) |
+| About | `/about` | `about-page` |
+| Contact | `/contact` | `site-settings` contact (LINE, phone, email, hours, map link). No form: there is no collection for messages |
+
+Also wired from their globals: the **announcement bar**, the **popup** (shown once a day or once
+per visit, a new version shows again after an edit) and **cookie consent** (PDPA; GA4 loads only
+after consent). `sitemap.xml` (both languages with hreflang), `robots.txt`, per-page metadata with
+canonical/hreflang/Open Graph, and JSON-LD (LocalBusiness on home, Product for trips and gear,
+Course for courses, Article for posts).
+
+**Booking request (no payment yet).** Every "จอง" button opens a sheet: departure, number of people,
+name, phone, email, LINE ID and a note. A server action (`src/site/actions/booking.ts`) validates on
+the server, has a honeypot field and a per-IP limit (5 requests / 10 minutes, in memory), then
+creates a `customers` and a `bookings` record (source `website`) through the Local API. The booking
+is saved as **`pending_review`**, not `hold`: a hold blocks seats until `holdExpiresAt`, but
+nothing expires holds yet (that job comes with payments in P2), so a web request would keep seats
+blocked. `pending_review` takes no seats and shows in the backoffice bookings list. The visitor sees
+a thank-you screen with the booking code; the shop calls back by LINE or phone. To confirm it, use
+**Reject slip** (moves it to hold) and then record the deposit; the **Approve slip** button needs an
+uploaded slip, which web requests don't have.
+
+**Freshness.** Pages are cached and rebuilt at most every 60 s; edits in the backoffice or `/admin`
+(trips, courses, departures, articles, products, sizes, globals, booking settings) refresh them
+right away through the revalidate hooks. Nothing is pre-rendered at build time (the build runs on an
+empty database): each page renders from the real database on its first request. List pages with
+filters (`/trips`, `/courses`, `/equipment`, `/articles`) render per request.
+
+Code: pages in `src/app/(frontend)/[locale]`, components and helpers in `src/site`, queries in
+`src/lib/content.ts`, styles in `src/app/(frontend)/globals.css` (plain CSS ported from the design;
+no Tailwind on the public site). Font: IBM Plex Sans Thai from `@fontsource` (already installed;
+the design's Inter + Noto Sans Thai would need Google Fonts at build time).
+
+หน้าเว็บสาธารณะ `/th` และ `/en` ดึงข้อมูลทั้งหมดจากหลังบ้าน ปุ่ม "จอง" ส่งคำขอจอง (ยังไม่รับชำระเงิน)
+คำขอจะเข้าไปที่หลังบ้านในสถานะ "รอตรวจสอบ" แล้วร้านติดต่อกลับทาง LINE หรือโทรศัพท์
+
 ## Database changes / เปลี่ยนโครงสร้างฐานข้อมูล
 
 `npm run dev` and `npm run seed` push schema changes to the local SQLite file automatically.
