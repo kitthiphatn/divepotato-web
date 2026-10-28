@@ -8,6 +8,7 @@ import { Icon } from '@/backoffice/icons'
 import { BO } from '@/backoffice/nav'
 import { requireUser } from '@/backoffice/server'
 import { Img } from '@/backoffice/ui/bits'
+import { SubTabs } from '@/backoffice/ui/fields'
 import type { DiveSite, Media } from '@/payload-types'
 
 export const metadata: Metadata = { title: 'ทริปและคอร์ส · Trips & courses' }
@@ -117,6 +118,22 @@ export default async function TripsPage({
           </Link>
         </div>
       </div>
+      <SubTabs
+        items={[
+          {
+            href: `${BO}/trips`,
+            label: L('ทริปและคอร์ส', 'Trips & courses'),
+            icon: 'map',
+            on: true,
+          },
+          {
+            href: `${BO}/trips/sites`,
+            label: L('จุดดำน้ำ', 'Dive sites'),
+            icon: 'mask',
+            on: false,
+          },
+        ]}
+      />
       <div className="chips">
         {(['all', ...CATS] as const).map((k) => (
           <Link

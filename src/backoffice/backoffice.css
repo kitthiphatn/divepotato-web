@@ -5267,3 +5267,18 @@ select.inp {
     grid-template-columns: minmax(0, 1fr);
   }
 }
+
+/* ===== dive sites ===== */
+button.tcard {
+  text-align: left;
+  width: 100%;
+}
+.tcard .clamp2 {
+  font-size: 13px;
+  color: var(--mu);
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  margin-top: 4px;
+}

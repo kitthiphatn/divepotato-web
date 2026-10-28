@@ -190,7 +190,10 @@ export function MediaLibrary({
         <Modal wide onClose={() => up.setDraft(null)} label={L('อัปโหลดรูป', 'Upload photo')}>
           <h3>{L('อัปโหลดรูป', 'Upload photo')}</h3>
           <p className="s">
-            {L('JPG, PNG, WebP, GIF หรือ AVIF ไม่เกิน 10 MB', 'JPG, PNG, WebP, GIF or AVIF, up to 10 MB')}
+            {L(
+              'JPG, PNG, WebP, GIF หรือ AVIF ไม่เกิน 10 MB',
+              'JPG, PNG, WebP, GIF or AVIF, up to 10 MB',
+            )}
           </p>
           <UploadBox lang={lang} up={up} onUpload={upload} />
         </Modal>
