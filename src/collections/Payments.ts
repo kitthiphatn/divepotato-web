@@ -1,10 +1,11 @@
 import type { CollectionConfig } from 'payload'
 
-import { adminOnly } from '../access/roles'
+import { adminOnly, bookingEditors } from '../access/roles'
 import { auditAfterChange, auditAfterDelete } from '../hooks/audit'
 import { GROUPS } from './groups'
 
 // Payment records only. P0 has no Omise integration: these fields are what P2/P3 will fill.
+// Staff review slips and record payments at the shop; only admins delete payment records.
 export const Payments: CollectionConfig = {
   slug: 'payments',
   labels: {
@@ -16,7 +17,12 @@ export const Payments: CollectionConfig = {
     group: GROUPS.bookings,
     defaultColumns: ['booking', 'kind', 'provider', 'amount', 'status', 'createdAt'],
   },
-  access: { read: adminOnly, create: adminOnly, update: adminOnly, delete: adminOnly },
+  access: {
+    read: bookingEditors,
+    create: bookingEditors,
+    update: bookingEditors,
+    delete: adminOnly,
+  },
   defaultSort: '-createdAt',
   hooks: {
     beforeChange: [

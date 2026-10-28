@@ -58,8 +58,8 @@ export const Users: CollectionConfig = {
       ],
       admin: {
         description: {
-          th: 'ผู้ดูแลระบบ: ทุกอย่าง · ผู้แก้ไขเนื้อหา: เนื้อหาเว็บ ทริป คอร์ส · พนักงาน: ดู/แก้การจอง ลูกค้า และรอบออกเดินทาง · ไกด์: ดูรอบออกเดินทางและการจองเพื่อใช้ใบรายชื่อเท่านั้น',
-          en: 'Admin: everything · Editor: website content, trips, courses · Staff: view/update bookings, customers and departures · Guide: view departures and bookings for manifests only',
+          th: 'ผู้ดูแลระบบ: ทุกอย่าง · ผู้แก้ไขเนื้อหา: เนื้อหาเว็บ ทริป คอร์ส · พนักงาน: รับจอง ตรวจสลิป รับชำระเงิน ดูแลลูกค้าและรอบออกเดินทาง · ไกด์: ดูรอบออกเดินทางและการจองเพื่อใช้ใบรายชื่อเท่านั้น',
+          en: 'Admin: everything · Editor: website content, trips, courses · Staff: take bookings, review slips, record payments, look after customers and departures · Guide: view departures and bookings for manifests only',
         },
       },
       access: {

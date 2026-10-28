@@ -15,7 +15,12 @@ export const Customers: CollectionConfig = {
     defaultColumns: ['name', 'phone', 'email', 'nationality'],
     listSearchableFields: ['name', 'email', 'phone', 'lineId'],
   },
-  access: { read: bookingEditors, update: bookingEditors, create: adminOnly, delete: adminOnly },
+  access: {
+    read: bookingEditors,
+    update: bookingEditors,
+    create: bookingEditors,
+    delete: adminOnly,
+  },
   fields: [
     { name: 'name', label: { th: 'ชื่อ-นามสกุล', en: 'Name' }, type: 'text', required: true },
     {
