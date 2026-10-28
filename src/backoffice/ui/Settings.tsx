@@ -1,5 +1,6 @@
 'use client'
 
+import Link from 'next/link'
 import { useState, useTransition } from 'react'
 
 import {
@@ -16,6 +17,7 @@ import { normalizeUsername, usernameFromEmail } from '@/lib/username'
 import { initials, money } from '../format'
 import { ROLE_LABEL, translator, type Lang } from '../i18n'
 import { Icon } from '../icons'
+import { BO } from '../nav'
 import { Modal } from './Modal'
 import { useToast } from './Toast'
 
@@ -139,6 +141,7 @@ export function SettingsForm({
         <a href="#set-pay">{L('ช่องทางรับเงิน', 'Payment channels')}</a>
         <a href="#set-line">{L('การแจ้งเตือน LINE', 'LINE notifications')}</a>
         <a href="#set-staff">{L('ทีมงานและสิทธิ์', 'Staff & roles')}</a>
+        <Link href={`${BO}/settings/audit`}>{L('บันทึกการแก้ไข', 'Audit log')}</Link>
       </nav>
       <div className="sets">
         <section className="card fsec" id="set-book">
@@ -427,6 +430,22 @@ export function SettingsForm({
               </div>
             ))}
           </div>
+        </section>
+
+        <section className="card fsec" id="set-audit">
+          <div className="ch" style={{ marginBottom: 4 }}>
+            <h3>{L('บันทึกการแก้ไข', 'Audit log')}</h3>
+            <Link className="btn g sm" href={`${BO}/settings/audit`}>
+              <Icon name="list" />
+              {L('เปิดบันทึก', 'Open log')}
+            </Link>
+          </div>
+          <p className="hint">
+            {L(
+              'ดูว่าใครสร้าง แก้ไข หรือลบการจอง การชำระเงิน รอบออกเดินทาง และทริป เมื่อไร',
+              'See who created, changed or deleted bookings, payments, departures and trips, and when',
+            )}
+          </p>
         </section>
 
         <div className="savebar">

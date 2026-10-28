@@ -5382,3 +5382,70 @@ p.pager {
     width: 100%;
   }
 }
+
+/* ===== audit log ===== */
+.afilt {
+  align-items: flex-end;
+}
+.afilt .field {
+  margin: 0;
+  min-width: 170px;
+  flex: 1 1 170px;
+  max-width: 260px;
+}
+.row.alog {
+  grid-template-columns: 130px 90px minmax(0, 1fr) minmax(0, 0.8fr) minmax(0, 2fr);
+  align-items: start;
+}
+.row.alog:hover {
+  background: none;
+}
+.row.alog .c2 a {
+  text-decoration: underline;
+}
+.alog .chg {
+  min-width: 0;
+  font-size: 13px;
+}
+.alog .chg summary {
+  cursor: pointer;
+  color: var(--ink);
+  overflow-wrap: anywhere;
+}
+.alog .chg dl {
+  margin: 8px 0 0;
+  display: grid;
+  gap: 6px;
+}
+.alog .chg dt {
+  font-weight: 600;
+}
+.alog .chg dd {
+  margin: 0;
+  color: var(--mu);
+  overflow-wrap: anywhere;
+  font-family: ui-monospace, monospace;
+  font-size: 12px;
+}
+@media (max-width: 760px) {
+  .afilt .field {
+    max-width: none;
+  }
+  .row.alog {
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
+  .row.alog .amt {
+    grid-column: 1;
+    grid-row: 1;
+    text-align: left;
+    justify-self: start;
+  }
+  .row.alog .c2 {
+    grid-column: 1;
+    grid-row: 2;
+    padding-left: 0;
+  }
+  .row.alog .chg {
+    grid-column: 1 / span 2;
+  }
+}
