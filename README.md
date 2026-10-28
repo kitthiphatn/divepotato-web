@@ -32,6 +32,36 @@ All seeded people, prices and dates are sample data.
 - `/admin/departures-calendar`: month view of departures coloured by how full they are
 - `/admin/manifest/<departureId>`: printable participant list (also linked from each departure)
 
+## Backoffice / หลังบ้านสำหรับทีมงาน
+
+`http://localhost:3006/backoffice` is the day-to-day back office for the shop team. It uses the same
+Payload login and access rules as `/admin`, in Thai by default (TH/EN switch at the top), with dark
+mode, and works on phones (bottom tab bar). `/admin` stays available; admins get a link to it from
+the user menu and Settings.
+
+| Role | Sees |
+|---|---|
+| Admin | Everything |
+| Staff | Today, Bookings, Departures, Customers |
+| Editor | Trips & courses, Website, Shop |
+| Guide | Today (read-only), Departures and manifests |
+
+- **Today**: departures today and this week, slips to review, balances due, missing health forms,
+  seats on hold and low stock (Bangkok time).
+- **Bookings**: search, status chips, booking panel with steps, slip, payments, participants and
+  timeline. Approve or reject a slip, record a deposit or balance (creates a Payment), mark
+  completed, cancel with refund, create a booking on hold. LINE/email buttons are marked "coming soon".
+- **Departures**: month calendar or list, departure detail with participants, printable manifest,
+  create (admin) and edit.
+- **Trips & courses**: cards by category; editor with TH/EN text, price and deposit, day-by-day
+  itinerary, photos from Media, show-on-website switch (published/draft) and a live preview card.
+- **Customers**: search, profile with booking history and staff notes, add/edit.
+- **Website**: home hero slides and the announcement bar with live previews; articles list (opens
+  `/admin` to write).
+- **Shop**: stock per size, tap a size to adjust with +/-.
+- **Settings** (admin): deposit %, seat hold minutes, cancellation policy (TH/EN plain text), Omise
+  and LINE keys (stored for phase 2), staff roles.
+
 ## Database changes / เปลี่ยนโครงสร้างฐานข้อมูล
 
 `npm run dev` and `npm run seed` push schema changes to the local SQLite file automatically.
