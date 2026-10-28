@@ -30,7 +30,7 @@ export function LoginForm({
       <h1>{L('เข้าสู่ระบบ', 'Sign in')}</h1>
       <p className="sub">
         {L(
-          'ยินดีต้อนรับกลับ ใช้ชื่อผู้ใช้หรืออีเมลของร้านเพื่อเข้าใช้งาน',
+          'ยินดีต้อนรับกลับ เข้าสู่ระบบด้วยชื่อผู้ใช้หรืออีเมลของร้าน',
           'Welcome back. Sign in with your username or shop email.',
         )}
       </p>
