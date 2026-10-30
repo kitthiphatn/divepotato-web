@@ -70,6 +70,7 @@ export function Dropdown({
       <button
         type="button"
         className="dd-btn"
+        role="combobox"
         aria-haspopup="listbox"
         aria-expanded={open}
         aria-labelledby={`${id}-l ${id}-v`}
