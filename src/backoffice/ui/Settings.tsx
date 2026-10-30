@@ -405,7 +405,9 @@ export function SettingsForm({
             <dd className="num">
               {webhooks.stripe}
               <br />
-              <small className="muted">payment_intent.succeeded, payment_intent.payment_failed</small>
+              <small className="muted">
+                payment_intent.succeeded, payment_intent.payment_failed, payment_intent.canceled
+              </small>
             </dd>
           </dl>
         </section>

@@ -191,4 +191,13 @@ https://demo.cleanandcare.live: install, tunnel, nightly backups, restore and up
 
 ขั้นตอนติดตั้งแบบทีละขั้น (ภาษาไทย) อยู่ที่ [deploy/ubuntu/README.md](deploy/ubuntu/README.md)
 
+## Payments / การรับชำระเงิน
+
+Deposits are paid on the website by card or PromptPay QR (Omise or Stripe, chosen in the
+backoffice; a demo provider is the default) or by bank transfer with a slip. Keys, webhooks and the
+go-live checklist: [docs/payments-production.md](docs/payments-production.md).
+
+วิธีเปิดรับชำระเงินจริง ตั้งคีย์ webhook และเช็กลิสต์ก่อนเปิดใช้ อยู่ที่
+[docs/payments-production.md](docs/payments-production.md)
+
 See [CLAUDE.md](CLAUDE.md) for the project phases and working rules.
