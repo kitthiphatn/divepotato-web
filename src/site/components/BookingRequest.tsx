@@ -1,7 +1,6 @@
 'use client'
 
 import { startTransition, useActionState, useEffect, useId, useRef, useState } from 'react'
-import { useRouter } from 'next/navigation'
 import { createPortal } from 'react-dom'
 
 import { requestBooking, type BookingRequestState } from '@/site/actions/booking'
@@ -119,7 +118,6 @@ function BookingSheet({
     null,
   )
   const closeBtn = useRef<HTMLButtonElement>(null)
-  const router = useRouter()
   const payUrl = state?.ok ? state.payUrl : undefined
   const max = Math.min(20, offering.departures.find((d) => d.id === dep)?.left ?? 1)
   const people = Math.min(pax, Math.max(1, max))
@@ -138,10 +136,11 @@ function BookingSheet({
     }
   }, [onClose])
 
-  // Off to the pay page; the button keeps saying "sending" until it opens
+  // Off to the pay page (a full load, so it opens at the top with the sheet's scroll lock
+  // gone); the button keeps saying "sending" until it opens
   useEffect(() => {
-    if (payUrl) router.push(payUrl)
-  }, [payUrl, router])
+    if (payUrl) window.location.assign(payUrl)
+  }, [payUrl])
 
   const done = state?.ok === true && !payUrl
   const err = state && !state.ok ? state : null
