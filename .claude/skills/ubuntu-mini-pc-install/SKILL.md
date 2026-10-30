@@ -76,6 +76,21 @@ ip -4 addr
 - **ต้องใส่ `nameservers` 1.1.1.1/8.8.8.8 ไว้เลย** DNS ของเราเตอร์บ้านเคยหา `deb.nodesource.com`
   ไม่เจอ ทำให้ install.sh ล้มตอนลง Node.js
 
+### เพิ่มสาย LAN ไว้ด้วย (แนะนำ)
+
+เว็บเร็วอยู่แล้ว (หน้า Trips ~0.05 วินาทีในเครื่อง) ที่ช้าคือ Wi-Fi/เน็ตขาออกของบ้าน
+ตั้งการ์ดแลนไว้เลย เสียบสายเมื่อไหร่ก็ใช้ได้ทันที ไม่ต้องลบไฟล์ Wi-Fi:
+```
+sudo sh -c "echo '{network: {version: 2, ethernets: {enp1s0: {dhcp4: true, optional: true, nameservers: {addresses: [1.1.1.1, 8.8.8.8]}}}}}' > /etc/netplan/02-lan.yaml && chmod 600 /etc/netplan/02-lan.yaml && netplan apply"
+```
+(`optional: true` = ไม่เสียบสายก็บูตได้ไม่ต้องรอ) เสียบสายแล้ว IP จะเปลี่ยน ดูด้วย `hostname -I`
+
+วัดว่าช้าที่เว็บหรือที่เน็ต (รันในเครื่อง):
+```
+curl -L -o /dev/null -s -w '%{http_code} %{size_download} %{time_total}\n' http://127.0.0.1:3006/en/trips
+```
+ต่ำกว่า 0.5 วินาที = เว็บปกติ ให้ดูที่เน็ต/Wi-Fi (เช็กอัปโหลดที่ fast.com)
+
 ## 4. SSH จาก Windows
 
 บนมินิพีซี:
