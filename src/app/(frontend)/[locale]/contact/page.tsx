@@ -3,9 +3,10 @@ import { notFound } from 'next/navigation'
 
 import { isLocale } from '@/i18n/config'
 import { getSite } from '@/lib/content'
-import { mapsUrl, socialsOf } from '@/site/components/Footer'
+import { socialsOf } from '@/site/components/Footer'
 import { PageIntro } from '@/site/components/PageIntro'
-import { cleanContact, latLng, telHref } from '@/site/format'
+import { ShopMap } from '@/site/components/ShopMap'
+import { cleanContact, telHref } from '@/site/format'
 import { getDict } from '@/site/i18n'
 import { LineIcon, MailIcon, PhoneIcon } from '@/site/icons'
 import { pageMeta } from '@/site/seo'
@@ -38,7 +39,6 @@ export default async function ContactPage({ params }: Props) {
   const lineId = cleanContact(c?.lineId)
   const lineUrl = c?.lineUrl && /^https?:\/\//i.test(c.lineUrl) ? c.lineUrl : null
   const socials = socialsOf(c)
-  const coords = latLng(c?.mapLocation)
 
   return (
     <>
@@ -116,35 +116,12 @@ export default async function ContactPage({ params }: Props) {
                 </div>
               )}
             </dl>
-            {coords ? (
-              <div className="map embed">
-                <iframe
-                  title={t.contact.address}
-                  src={`https://maps.google.com/maps?q=${coords.join(',')}&z=16&hl=${locale}&output=embed`}
-                  loading="lazy"
-                  referrerPolicy="no-referrer-when-downgrade"
-                  allowFullScreen
-                />
-                <div className="mcard">
-                  {c?.address && <p>{c.address}</p>}
-                  <a className="pill k sm" href={mapsUrl(coords.join(','))} target="_blank" rel="noopener noreferrer">
-                    {t.contact.map}
-                  </a>
-                </div>
-              </div>
-            ) : (
-              c?.address && (
-                <div className="map">
-                  <div>
-                    <span className="pin" />
-                    <p>{c.address}</p>
-                    <a className="pill wh sm" href={mapsUrl(c.address)} target="_blank" rel="noopener noreferrer">
-                      {t.contact.map}
-                    </a>
-                  </div>
-                </div>
-              )
-            )}
+            <ShopMap
+              address={c?.address}
+              mapLocation={c?.mapLocation}
+              locale={locale}
+              label={t.contact.map}
+            />
           </div>
         </div>
       </section>

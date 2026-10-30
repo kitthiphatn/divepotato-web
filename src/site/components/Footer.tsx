@@ -7,6 +7,7 @@ import type { Dict } from '@/site/i18n'
 
 import { CookieSettingsLink } from './CookieConsent'
 import type { NavItem } from './Header'
+import { ShopMap } from './ShopMap'
 
 export function socialsOf(contact: Site['settings']['contact']) {
   const list: [string, string | null | undefined][] = [
@@ -21,9 +22,6 @@ export function socialsOf(contact: Site['settings']['contact']) {
     url && /^https?:\/\//i.test(url.trim()) ? [{ name, url: url.trim() }] : [],
   )
 }
-
-export const mapsUrl = (address: string) =>
-  `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(address)}`
 
 export function Footer({
   locale,
@@ -135,22 +133,12 @@ export function Footer({
             </div>
           )}
         </div>
-        {c?.address && (
-          <div className="map">
-            <div>
-              <span className="pin" />
-              <p>{c.address}</p>
-              <a
-                className="pill wh sm"
-                href={mapsUrl(c.address)}
-                target="_blank"
-                rel="noopener noreferrer"
-              >
-                {t.contact.map}
-              </a>
-            </div>
-          </div>
-        )}
+        <ShopMap
+          address={c?.address}
+          mapLocation={c?.mapLocation}
+          locale={locale}
+          label={t.contact.map}
+        />
         <div className="fbot">
           <span>
             © {year} {siteName}
