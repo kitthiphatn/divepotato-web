@@ -1,6 +1,7 @@
 'use client'
 
 import { startTransition, useActionState, useEffect, useId, useRef, useState } from 'react'
+import { createPortal } from 'react-dom'
 
 import { requestBooking, type BookingRequestState } from '@/site/actions/booking'
 
@@ -72,19 +73,22 @@ export function BookButton({
       <button ref={trigger} type="button" className={className} onClick={() => setOpen(true)}>
         {children}
       </button>
-      {open && (
-        <BookingSheet
-          offering={offering}
-          labels={labels}
-          contact={contact}
-          locale={locale}
-          departureId={departureId}
-          onClose={() => {
-            setOpen(false)
-            trigger.current?.focus({ preventScroll: true })
-          }}
-        />
-      )}
+      {/* Portalled to <body> so the card or sticky bar it opens from can't restyle or clip it */}
+      {open &&
+        createPortal(
+          <BookingSheet
+            offering={offering}
+            labels={labels}
+            contact={contact}
+            locale={locale}
+            departureId={departureId}
+            onClose={() => {
+              setOpen(false)
+              trigger.current?.focus({ preventScroll: true })
+            }}
+          />,
+          document.body,
+        )}
     </>
   )
 }
@@ -233,7 +237,6 @@ function BookingSheet({
               ))}
             </div>
 
-            <span className="lbl">{t.people}</span>
             <div className="ppl">
               <span>{t.people}</span>
               <div className="stepper">

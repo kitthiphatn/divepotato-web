@@ -2448,9 +2448,15 @@ button {
   }
 }
 .shh {
+  position: sticky;
+  top: -24px;
+  z-index: 2;
   display: flex;
   justify-content: space-between;
   align-items: center;
+  margin: -24px -28px 0;
+  padding: 16px 28px 8px;
+  background: #fff;
 }
 .shh .k {
   font-size: 13px;
@@ -2526,6 +2532,7 @@ button {
   display: flex;
   align-items: center;
   justify-content: space-between;
+  margin-top: 18px;
   border: 1px solid var(--ln);
   border-radius: 14px;
   padding: 6px 6px 6px 14px;
@@ -3012,6 +3019,14 @@ textarea.inp {
     border-radius: 24px 24px 0 0;
     max-height: 92svh;
     padding: 20px 20px calc(24px + env(safe-area-inset-bottom));
+  }
+  .shh {
+    top: -20px;
+    margin: -20px -20px 0;
+    padding: 14px 20px 8px;
+  }
+  .sheet h3 {
+    font-size: 22px;
   }
   .pdp {
     grid-template-columns: 1fr;
