@@ -4,12 +4,14 @@ import config from '@payload-config'
 import { headers } from 'next/headers'
 import { getPayload } from 'payload'
 
+import { expireStaleHolds } from '@/hooks/bookings'
 import { isLocale, type Locale } from '@/i18n/config'
 import { dayStart, shopDay } from '@/lib/dates'
+import { payPath } from '@/lib/payments/link'
 import { getDict } from '@/site/i18n'
 
 export type BookingRequestState =
-  | { ok: true; code: string | null }
+  | { ok: true; code: string | null; payUrl?: string }
   | { ok: false; error: string; field?: string }
   | null
 
@@ -40,13 +42,11 @@ const PHONE = /^\+?[0-9][0-9 ()-]{6,18}[0-9]$/
 const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/
 const LINE_ID = /^@?[A-Za-z0-9._-]{2,40}$/
 
-// Booking request from a trip or course page. No payment is taken (that is phase 2): this only
-// records a customer and a booking for the team to follow up on LINE or by phone.
-//
-// Status: `pending_review`. A `hold` reserves seats until its 15-minute expiry, but nothing
-// expires holds yet (no job until phase 2), so the departure's stored seatsHeld would keep
-// those seats blocked until another booking on that departure is saved. pending_review is
-// counted neither as held nor as booked by the seat hooks, so a request reserves nothing.
+// Booking from a trip or course page. Records the customer and a booking on `hold`, which keeps
+// its seats for the minutes set in Booking settings, and returns the pay link (/pay/<code>?t=…)
+// where the customer pays the deposit by card, PromptPay QR or bank transfer. A hold nobody pays
+// is marked expired the next time someone books, opens a pay page or staff open the bookings
+// list, which gives the seats back.
 export async function requestBooking(
   _prev: BookingRequestState,
   form: FormData,
@@ -82,6 +82,8 @@ export async function requestBooking(
 
   try {
     const payload = await getPayload({ config })
+    // Give back seats from holds that ran out before counting what's left
+    await expireStaleHolds(payload, departureId)
     const dep = await payload
       .findByID({ collection: 'departures', id: departureId, depth: 0, overrideAccess: true })
       .catch(() => null)
@@ -98,14 +100,14 @@ export async function requestBooking(
         phone,
         email: email || undefined,
         lineId: lineId || undefined,
-        notes: `${locale === 'th' ? 'ขอจองผ่านเว็บไซต์' : 'Website booking request'} (${locale.toUpperCase()})${note ? `\n${note}` : ''}`,
+        notes: `${locale === 'th' ? 'จองผ่านเว็บไซต์' : 'Website booking'} (${locale.toUpperCase()})${note ? `\n${note}` : ''}`,
       },
       overrideAccess: true,
     })
     const booking = await payload.create({
       collection: 'bookings',
       data: {
-        status: 'pending_review',
+        status: 'hold',
         source: 'website',
         departure: dep.id,
         customer: customer.id,
@@ -117,14 +119,18 @@ export async function requestBooking(
         timeline: [
           {
             at: new Date().toISOString(),
-            event: 'website request (pending_review)',
+            event: 'website booking (hold)',
             note: [lineId && `LINE ${lineId}`, note].filter(Boolean).join(' · ').slice(0, 500) || undefined,
           },
         ],
       },
       overrideAccess: true,
     })
-    return { ok: true, code: booking.code ?? null }
+    return {
+      ok: true,
+      code: booking.code ?? null,
+      payUrl: booking.code && booking.payToken ? payPath(locale, booking.code, booking.payToken) : undefined,
+    }
   } catch (err) {
     console.error('Booking request failed', err)
     return { ok: false, error: e.server }

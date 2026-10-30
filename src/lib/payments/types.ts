@@ -41,3 +41,7 @@ export type Adapter = {
 }
 
 export class ProviderError extends Error {}
+
+// Tokens the demo card form makes from the two test card numbers (see demo.ts)
+export const DEMO_TOKEN_OK = 'demo_tok_ok'
+export const DEMO_TOKEN_DECLINED = 'demo_tok_declined'

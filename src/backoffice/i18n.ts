@@ -47,9 +47,18 @@ export const VOID_STATUSES = ['cancelled', 'refunded', 'expired']
 
 export const PROVIDER_LABEL: Record<string, Pair> = {
   omise: ['Omise', 'Omise'],
+  stripe: ['Stripe', 'Stripe'],
+  demo: ['เดโม', 'Demo'],
   slip: ['สลิปโอนเงิน', 'Transfer slip'],
   cash: ['เงินสดที่ร้าน', 'Cash at shop'],
   transfer: ['โอนผ่านธนาคาร', 'Bank transfer'],
+}
+// How the customer paid (Payments `method`)
+export const METHOD_LABEL: Record<string, Pair> = {
+  card: ['บัตร', 'Card'],
+  promptpay: ['QR พร้อมเพย์', 'PromptPay QR'],
+  transfer: ['โอนเงิน', 'Transfer'],
+  cash: ['เงินสด', 'Cash'],
 }
 // Payment record statuses (Payments `status`) and their pill colours
 export const PAY_STATUS_LABEL: Record<string, Pair> = {

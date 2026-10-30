@@ -1,6 +1,7 @@
 'use client'
 
 import { startTransition, useActionState, useEffect, useId, useRef, useState } from 'react'
+import { useRouter } from 'next/navigation'
 import { createPortal } from 'react-dom'
 
 import { requestBooking, type BookingRequestState } from '@/site/actions/booking'
@@ -47,8 +48,8 @@ export type BookingContact = { lineUrl: string | null; phoneHref: string | null 
 
 const baht = (n: number) => `฿${Math.round(n).toLocaleString('en-US')}`
 
-// "จอง" button: opens a booking-request sheet. Nothing is paid here (online payment is
-// phase 2); the server action records the request for the team to confirm.
+// "จอง" button: opens the booking sheet. The server action holds the seats and the sheet then
+// sends the customer to the pay page for the deposit.
 export function BookButton({
   offering,
   labels,
@@ -118,6 +119,8 @@ function BookingSheet({
     null,
   )
   const closeBtn = useRef<HTMLButtonElement>(null)
+  const router = useRouter()
+  const payUrl = state?.ok ? state.payUrl : undefined
   const max = Math.min(20, offering.departures.find((d) => d.id === dep)?.left ?? 1)
   const people = Math.min(pax, Math.max(1, max))
   const total = offering.price * people
@@ -135,7 +138,12 @@ function BookingSheet({
     }
   }, [onClose])
 
-  const done = state?.ok === true
+  // Off to the pay page; the button keeps saying "sending" until it opens
+  useEffect(() => {
+    if (payUrl) router.push(payUrl)
+  }, [payUrl, router])
+
+  const done = state?.ok === true && !payUrl
   const err = state && !state.ok ? state : null
   const bad = (f: string) => (err?.field === f ? true : undefined)
 
@@ -293,8 +301,8 @@ function BookingSheet({
                 {err.error}
               </p>
             )}
-            <button className="pill y full" type="submit" disabled={pending || !dep}>
-              {pending ? t.sending : t.submit}
+            <button className="pill y full" type="submit" disabled={pending || !dep || !!payUrl}>
+              {pending || payUrl ? t.sending : t.submit}
             </button>
             <p className="sfine">{t.fine}</p>
           </>

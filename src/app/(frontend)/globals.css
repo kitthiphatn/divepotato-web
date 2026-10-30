@@ -2671,6 +2671,295 @@ textarea.inp {
   flex-wrap: wrap;
 }
 
+/* ---------- pay page ---------- */
+.sec.payp {
+  padding: 48px 0 96px;
+}
+.payw {
+  display: grid;
+  gap: 20px;
+  max-width: 1040px;
+}
+.payh .eb {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 6px;
+}
+.payh h1 {
+  font-size: clamp(30px, 4.4vw, 48px);
+}
+.paysum .sum {
+  margin-top: 0;
+}
+.sum .due dt,
+.sum .due dd {
+  color: var(--k);
+  font-weight: 600;
+}
+.sum .due dd {
+  font-size: 18px;
+}
+.paymain {
+  border: 1px solid var(--ln);
+  border-radius: 24px;
+  padding: 22px 20px 24px;
+  min-width: 0;
+}
+@media (min-width: 860px) {
+  .payw {
+    grid-template-columns: minmax(0, 1fr) 360px;
+    grid-template-areas: 'head head' 'main sum';
+    align-items: start;
+    column-gap: 32px;
+  }
+  .payh {
+    grid-area: head;
+  }
+  .paysum {
+    grid-area: sum;
+    position: sticky;
+    top: calc(var(--hh) + 24px);
+  }
+  .paymain {
+    grid-area: main;
+    padding: 28px 32px 32px;
+  }
+}
+.demob {
+  display: inline-block;
+  background: var(--y);
+  color: var(--k);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  line-height: 1;
+  padding: 4px 8px;
+  border-radius: 999px;
+  text-transform: uppercase;
+}
+.demon {
+  font-size: 14px;
+  color: var(--mu);
+  margin-bottom: 4px;
+}
+.timer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  background: var(--k);
+  color: #fff;
+  border-radius: 14px;
+  padding: 10px 16px;
+  font-size: 14px;
+  margin-bottom: 14px;
+}
+.timer b {
+  font-size: 20px;
+  color: var(--y);
+  letter-spacing: 0.02em;
+}
+.timer.low b {
+  color: #ff8a80;
+}
+.ptabs {
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: 1fr;
+  gap: 4px;
+  background: var(--gr);
+  border-radius: 999px;
+  padding: 4px;
+}
+.ptabs button {
+  min-height: 40px;
+  border-radius: 999px;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--mu);
+  padding: 0 8px;
+  line-height: 1.2;
+}
+.ptabs button[aria-selected='true'] {
+  background: #fff;
+  color: var(--k);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12);
+}
+.ppane {
+  margin-top: 8px;
+}
+.hintp {
+  font-size: 14px;
+  color: var(--mu);
+  margin-top: 14px;
+}
+.paymain .pill.full {
+  min-height: 52px;
+  margin-top: 18px;
+  font-size: 16px;
+}
+.paymain .pill.full + .pill.full {
+  margin-top: 10px;
+}
+.stripe-card {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+.stripe-card > * {
+  width: 100%;
+}
+.qrbox {
+  display: grid;
+  justify-items: center;
+  gap: 4px;
+  margin-top: 16px;
+  padding: 20px;
+  border-radius: 20px;
+  background: var(--gr);
+  text-align: center;
+}
+.qrbox img,
+.qrbox svg {
+  width: min(260px, 70vw);
+  height: auto;
+  background: #fff;
+  border-radius: 12px;
+}
+.qrbox b {
+  font-size: 22px;
+  margin-top: 8px;
+}
+.qrbox small {
+  color: var(--mu);
+  font-size: 13px;
+}
+.demoqr {
+  position: relative;
+  display: grid;
+  justify-items: center;
+  gap: 8px;
+}
+.demoqr figcaption {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--k);
+  background: var(--y);
+  border-radius: 999px;
+  padding: 2px 12px;
+}
+.qrwait {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  font-size: 14px;
+  color: var(--mu);
+  margin-top: 14px;
+  text-align: center;
+}
+.qrwait i {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--y);
+  flex: none;
+  animation: blink 1.2s ease-in-out infinite;
+}
+@keyframes blink {
+  50% {
+    opacity: 0.25;
+  }
+}
+.bankd dd {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  text-align: right;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.cpy {
+  font-size: 13px;
+  font-weight: 500;
+  border: 1px solid var(--ln);
+  border-radius: 999px;
+  padding: 2px 10px;
+  flex: none;
+}
+.slipin .drop {
+  display: grid;
+  gap: 2px;
+  justify-items: center;
+  text-align: center;
+  border: 1.5px dashed #c7c7cc;
+  border-radius: 16px;
+  padding: 22px 16px;
+  cursor: pointer;
+  transition: border-color 0.2s;
+}
+.slipin .drop:hover,
+.xfer:has(input[type='file']:focus-visible) .drop {
+  border-color: var(--k);
+}
+.slipin .drop b {
+  font-weight: 500;
+  overflow-wrap: anywhere;
+}
+.slipin .drop small {
+  color: var(--mu);
+  font-size: 13px;
+}
+.paydone {
+  text-align: center;
+  padding: 8px 0 4px;
+}
+.paydone .ck2 {
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  background: var(--k);
+  color: var(--y);
+  display: grid;
+  place-items: center;
+  margin: 8px auto 16px;
+}
+.paydone h2 {
+  font-size: 26px;
+}
+.paydone p {
+  color: var(--mu);
+  margin-top: 8px;
+}
+.paydone .ref {
+  color: var(--ink);
+  font-size: 17px;
+}
+.paydone h3 {
+  font-size: 16px;
+  margin-top: 24px;
+}
+.paydone .steps {
+  list-style: decimal;
+  text-align: left;
+  max-width: 440px;
+  margin: 8px auto 0;
+  padding-left: 22px;
+  color: var(--mu);
+  font-size: 15px;
+}
+.paydone .steps li + li {
+  margin-top: 4px;
+}
+.paydone .alt {
+  display: flex;
+  gap: 8px;
+  justify-content: center;
+  flex-wrap: wrap;
+  margin-top: 22px;
+}
+
 /* ---------- popup ---------- */
 .pop {
   position: fixed;

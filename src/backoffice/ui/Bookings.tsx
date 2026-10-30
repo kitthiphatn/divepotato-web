@@ -23,6 +23,7 @@ import { addDays, diffDays, fd, fdy, frange, initials, money, shopTime, ymd } fr
 import {
   CERT_LABEL,
   KIND_LABEL,
+  METHOD_LABEL,
   pair,
   PROVIDER_LABEL,
   SOURCE_LABEL,
@@ -140,6 +141,17 @@ function eventText(e: { event: string; note: string }, L: Tr, lang: Lang) {
         'slip approved': L('อนุมัติสลิป', 'Slip approved'),
         'slip rejected': L('ปฏิเสธสลิป', 'Slip rejected'),
         'payment recorded': L('บันทึกการรับเงิน', 'Payment recorded'),
+        'payment received': L('รับชำระออนไลน์', 'Online payment received'),
+        'payment failed': L('ชำระออนไลน์ไม่สำเร็จ', 'Online payment failed'),
+        'payment mismatch': L(
+          'ยอดหรือการจองไม่ตรงกับรายการชำระ ตรวจสอบด่วน',
+          'Payment does not match the booking, check it',
+        ),
+        'paid after hold expired': L('ชำระหลังหมดเวลากันที่นั่ง', 'Paid after the hold expired'),
+        'refund needed': L('ต้องคืนเงินลูกค้า', 'Refund needed'),
+        'check duplicate payment': L('อาจชำระซ้ำ ตรวจสอบ', 'Possible duplicate payment, check'),
+        'slip uploaded': L('ลูกค้าส่งสลิป', 'Customer sent a slip'),
+        'website booking (hold)': L('จองผ่านเว็บไซต์', 'Website booking'),
         cancelled: L('ยกเลิกการจอง', 'Booking cancelled'),
       }[e.event] ?? e.event
   return e.note ? `${text} · ${e.note}` : text
@@ -164,9 +176,23 @@ const payIcon = (p: PaymentVM) =>
     ? 'wallet'
     : p.provider === 'transfer'
       ? 'bank'
-      : p.provider === 'omise'
-        ? 'card'
-        : 'slip'
+      : p.method === 'promptpay'
+        ? 'qr'
+        : p.method === 'card' || p.provider === 'omise'
+          ? 'card'
+          : 'slip'
+
+// "Omise · PromptPay QR", "Transfer slip", with a DEMO badge for simulated payments
+function PayVia({ p, lang }: { p: PaymentVM; lang: Lang }) {
+  const method = p.method && p.provider !== 'slip' && p.provider !== 'cash' ? METHOD_LABEL[p.method] : null
+  return (
+    <>
+      {p.provider === 'demo' && <span className="pill nodot demo">DEMO</span>}{' '}
+      {pair(lang, PROVIDER_LABEL[p.provider], p.provider)}
+      {method ? ` · ${pair(lang, method)}` : ''}
+    </>
+  )
+}
 
 type ModalKind = null | 'pay' | 'reject' | 'cancel' | 'slip' | 'new'
 
@@ -441,8 +467,9 @@ function Drawer({
   const due = dueOf(b)
   const voided = ['cancelled', 'refunded', 'expired'].includes(b.status)
   const idx = STEPS.findIndex((s) => s[0] === b.status)
-  const pendingPay = b.payments.find((p) => p.status === 'pending') ?? null
-  const shown = b.payments.filter((p) => p.status !== 'pending')
+  // Only a transfer slip waits for staff; a pending card/QR attempt is listed with the payments
+  const pendingPay = b.payments.find((p) => p.status === 'pending' && p.provider === 'slip') ?? null
+  const shown = b.payments.filter((p) => p !== pendingPay)
   const balDue = d ? addDays(d.start, -balanceDays) : null
   const healthIn = b.participants.filter((p) => p.healthOk).length
   const pct = (p: PaymentVM) => (b.total ? Math.round((p.amount / b.total) * 100) : 0)
@@ -678,7 +705,7 @@ function Drawer({
                       : pair(lang, KIND_LABEL[p.kind], p.kind)}
                   </b>
                   <span>
-                    {fd(ymd(p.at), lang)} · {pair(lang, PROVIDER_LABEL[p.provider], p.provider)}
+                    {fd(ymd(p.at), lang)} · <PayVia p={p} lang={lang} />
                     {p.ref ? ` · ${p.ref}` : ''}
                   </span>
                 </span>
@@ -691,6 +718,8 @@ function Drawer({
                     <span className="pill st-paid">{L('ยืนยันแล้ว', 'Confirmed')}</span>
                   ) : p.status === 'rejected' ? (
                     <span className="pill st-cancelled">{L('ปฏิเสธแล้ว', 'Rejected')}</span>
+                  ) : p.status === 'pending' ? (
+                    <span className="pill st-review">{L('รอผลชำระ', 'Awaiting payment')}</span>
                   ) : (
                     <span className="pill st-hold">{L('ไม่สำเร็จ', 'Failed')}</span>
                   )}
@@ -1070,7 +1099,8 @@ function CancelModal({
 
 function SlipLightbox({ b, L, onClose }: { b: BookingVM; L: Tr; onClose: () => void }) {
   const p =
-    b.payments.find((x) => x.status === 'pending' && x.slip) ?? b.payments.find((x) => x.slip)
+    b.payments.find((x) => x.status === 'pending' && x.provider === 'slip' && x.slip) ??
+    b.payments.find((x) => x.slip)
   return (
     <div className="lbox" onClick={onClose}>
       <button className="ibtn" type="button" onClick={onClose} aria-label={L('ปิด', 'Close')}>

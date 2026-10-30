@@ -4,10 +4,7 @@
 // even demo card numbers never reach the server.
 import { randomBytes } from 'node:crypto'
 
-import type { Adapter, Charge } from './types'
-
-export const DEMO_TOKEN_OK = 'demo_tok_ok'
-export const DEMO_TOKEN_DECLINED = 'demo_tok_declined'
+import { DEMO_TOKEN_OK, type Adapter, type Charge } from './types'
 
 // Kept on globalThis so dev-server reloads of this module don't lose pending demo charges
 const g = globalThis as unknown as { __demoCharges?: Map<string, Charge> }

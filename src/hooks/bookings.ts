@@ -1,11 +1,15 @@
+import { randomBytes } from 'node:crypto'
+
 import type {
+  BasePayload,
   CollectionAfterChangeHook,
   CollectionAfterDeleteHook,
   CollectionBeforeChangeHook,
   PayloadRequest,
 } from 'payload'
 
-// Statuses that take a seat for good; `hold` only reserves one until it expires
+// Statuses that take a seat for good; `hold` only reserves one until it expires, and
+// `pending_review` (a transfer slip waiting for staff) holds it until staff approve or reject
 export const SEAT_STATUSES = ['deposit_paid', 'paid', 'completed'] as const
 
 type Rel = number | { id: number } | null | undefined
@@ -31,7 +35,7 @@ async function nextCode(req: PayloadRequest) {
   return `${prefix}${String(n + 1).padStart(4, '0')}`
 }
 
-// Code, money, hold expiry and timeline. Totals always come from the departure's trip/course
+// Code, pay-link token, money, hold expiry and timeline. Totals always come from the departure's trip/course
 // price × participants, with the trip's deposit % or the shop default from Booking settings.
 export const prepareBooking: CollectionBeforeChangeHook = async ({
   data,
@@ -48,6 +52,8 @@ export const prepareBooking: CollectionBeforeChangeHook = async ({
   })
 
   if (operation === 'create' && !next.code) next.code = await nextCode(req)
+  // Unguessable part of the customer's pay link
+  if (operation === 'create' && !next.payToken) next.payToken = randomBytes(18).toString('base64url')
 
   const departureId = relId(next.departure ?? originalDoc?.departure)
   const participants = next.participants ?? originalDoc?.participants
@@ -106,9 +112,9 @@ export const prepareBooking: CollectionBeforeChangeHook = async ({
   return next
 }
 
-// Recount seats on a departure from its bookings (recounting avoids drift from missed updates)
-export async function syncDepartureSeats(req: PayloadRequest, departureId: number) {
-  const { docs } = await req.payload.find({
+// Seats taken (booked) and reserved (held) on a departure, counted from its bookings
+export async function countSeats(payload: BasePayload, departureId: number, req?: PayloadRequest) {
+  const { docs } = await payload.find({
     collection: 'bookings',
     where: { departure: { equals: departureId } },
     pagination: false,
@@ -122,9 +128,16 @@ export async function syncDepartureSeats(req: PayloadRequest, departureId: numbe
   for (const b of docs) {
     const n = countOf(b.participants)
     if ((SEAT_STATUSES as readonly string[]).includes(b.status)) booked += n
+    else if (b.status === 'pending_review') held += n
     else if (b.status === 'hold' && (!b.holdExpiresAt || new Date(b.holdExpiresAt).getTime() > now))
       held += n
   }
+  return { booked, held }
+}
+
+// Recount seats on a departure from its bookings (recounting avoids drift from missed updates)
+export async function syncDepartureSeats(req: PayloadRequest, departureId: number) {
+  const { booked, held } = await countSeats(req.payload, departureId, req)
   // `context` is merged into the shared request context, so restore the flag afterwards;
   // otherwise the booking's own audit entry (written after this hook) would be skipped too
   const previous = req.context.skipAudit
@@ -164,4 +177,36 @@ export const syncSeatsAfterDelete: CollectionAfterDeleteHook = async ({ doc, req
   const id = relId(doc.departure)
   if (id) await syncDepartureSeats(req, id)
   return doc
+}
+
+// Mark `hold` bookings whose hold has run out as `expired`; the seat hook then gives their seats
+// back. There is no background job: this runs when a booking is requested, when a pay page
+// loads and when staff open the bookings list. Optionally limited to one departure.
+export async function expireStaleHolds(payload: BasePayload, departureId?: number) {
+  const { docs } = await payload.find({
+    collection: 'bookings',
+    where: {
+      and: [
+        { status: { equals: 'hold' } },
+        { holdExpiresAt: { less_than: new Date().toISOString() } },
+        ...(departureId ? [{ departure: { equals: departureId } }] : []),
+      ],
+    },
+    pagination: false,
+    depth: 0,
+    overrideAccess: true,
+  })
+  for (const b of docs) {
+    try {
+      await payload.update({
+        collection: 'bookings',
+        id: b.id,
+        data: { status: 'expired' },
+        overrideAccess: true,
+      })
+    } catch (err) {
+      payload.logger.error({ err }, `Could not expire hold ${b.code}`)
+    }
+  }
+  return docs.length
 }

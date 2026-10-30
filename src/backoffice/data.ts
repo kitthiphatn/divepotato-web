@@ -91,6 +91,7 @@ export type PaymentVM = {
   id: number
   kind: string
   provider: string
+  method: string
   amount: number
   status: string
   ref: string
@@ -192,6 +193,7 @@ export async function findBookings(s: Session, where?: Where, limit = 1000): Pro
         id: p.id,
         kind: p.kind,
         provider: p.provider,
+        method: p.method ?? '',
         amount: p.amount ?? 0,
         status: p.status,
         ref: p.ref ?? '',

@@ -9,6 +9,7 @@ import {
 } from '@/backoffice/data'
 import { todayYmd } from '@/backoffice/format'
 import { requireUser } from '@/backoffice/server'
+import { expireStaleHolds } from '@/hooks/bookings'
 import { BookingsClient } from '@/backoffice/ui/Bookings'
 
 export const metadata: Metadata = { title: 'การจอง · Bookings' }
@@ -23,6 +24,8 @@ export default async function BookingsPage({
   const s = await requireUser(['admin', 'staff'])
   const sp = await searchParams
   const today = todayYmd()
+  // No background job: holds that ran out are marked expired whenever staff open the list
+  await expireStaleHolds(s.payload)
   const [bookings, departures, customers, defaults] = await Promise.all([
     findBookings(s),
     bookableDepartures(s, today),

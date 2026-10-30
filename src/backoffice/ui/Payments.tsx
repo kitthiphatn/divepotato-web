@@ -7,6 +7,7 @@ import { useState } from 'react'
 import { fd, money, shopTime, ymd } from '../format'
 import {
   KIND_LABEL,
+  METHOD_LABEL,
   pair,
   PAY_STATUS_CLASS,
   PAY_STATUS_LABEL,
@@ -25,6 +26,7 @@ export type PaymentRow = {
   customer: string
   kind: string
   provider: string
+  method: string
   amount: number
   status: string
   ref: string
@@ -141,7 +143,17 @@ export function PaymentsList({
                   </button>
                 ) : (
                   <span className="noimg sm" aria-hidden="true">
-                    <Icon name={p.provider === 'cash' ? 'wallet' : 'slip'} />
+                    <Icon
+                      name={
+                        p.provider === 'cash'
+                          ? 'wallet'
+                          : p.method === 'promptpay'
+                            ? 'qr'
+                            : p.method === 'card'
+                              ? 'card'
+                              : 'slip'
+                      }
+                    />
                   </span>
                 )}
               </span>
@@ -156,7 +168,11 @@ export function PaymentsList({
               <span className="c2">
                 <b>{pair(lang, KIND_LABEL[p.kind], p.kind)}</b>
                 <small>
+                  {p.provider === 'demo' && <span className="pill nodot demo">DEMO</span>}{' '}
                   {pair(lang, PROVIDER_LABEL[p.provider], p.provider)}
+                  {p.method && METHOD_LABEL[p.method] && p.provider !== 'slip' && p.provider !== 'cash'
+                    ? ` · ${pair(lang, METHOD_LABEL[p.method])}`
+                    : ''}
                   {p.ref ? ` · ${p.ref}` : ''}
                   {p.reviewedBy ? ` · ${L('ตรวจโดย', 'by')} ${p.reviewedBy}` : ''}
                 </small>
