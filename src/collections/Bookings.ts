@@ -97,6 +97,14 @@ export const Bookings: CollectionConfig = {
       admin: { position: 'sidebar', date: { pickerAppearance: 'dayAndTime' } },
     },
     {
+      // Secret part of the customer's pay link (/pay/<code>?t=<token>), set on create. Never
+      // returned by the API or shown in the admin; the pay page reads it with overrideAccess.
+      name: 'payToken',
+      type: 'text',
+      access: { read: () => false, create: () => false, update: () => false },
+      admin: { hidden: true },
+    },
+    {
       name: 'source',
       label: { th: 'ช่องทางการจอง', en: 'Source' },
       type: 'select',

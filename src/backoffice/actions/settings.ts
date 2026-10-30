@@ -1,9 +1,10 @@
 'use server'
 
-// Booking settings (deposit, seat hold, cancellation policy, Omise/LINE keys stored for P2) and
-// staff roles. Admin only, saved through the Local API as the signed-in admin.
+// Booking settings (deposit, seat hold, cancellation policy, payment provider and methods, bank
+// account for transfers, LINE settings stored for later) and staff roles. Admin only, saved through the Local API as the signed-in admin.
 import { revalidatePath } from 'next/cache'
 
+import { PAY_METHODS, PROVIDERS, type PayMethod, type ProviderId } from '@/lib/payments/types'
 import { isValidUsername, normalizeUsername, USERNAME_MAX } from '@/lib/username'
 import type { User } from '@/payload-types'
 
@@ -16,9 +17,11 @@ export type SettingsInput = {
   holdMinutes: number
   cancellation: { th: string; en: string }
   cancellationDirty: { th: boolean; en: boolean }
-  omisePublicKey: string
-  omiseSecretKey: string
-  promptPayId: string
+  paymentProvider: ProviderId
+  payMethods: PayMethod[]
+  bankName: string
+  accountName: string
+  accountNumber: string
   lineChannelToken: string
   lineTarget: string
   notifyEmail: string
@@ -42,6 +45,14 @@ export async function saveSettingsAction(v: SettingsInput): Promise<ActionResult
   const email = v.notifyEmail.trim()
   if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email))
     return { ok: false, message: L('อีเมลแจ้งเตือนไม่ถูกต้อง', 'Invalid notification email') }
+  if (!PROVIDERS.includes(v.paymentProvider))
+    return { ok: false, message: L('เลือกผู้ให้บริการรับชำระเงิน', 'Choose a payment provider') }
+  const payMethods = PAY_METHODS.filter((m) => v.payMethods.includes(m))
+  if (!payMethods.length)
+    return {
+      ok: false,
+      message: L('เปิดอย่างน้อยหนึ่งช่องทางชำระเงิน', 'Turn on at least one payment method'),
+    }
   const policy = (locale: 'th' | 'en') =>
     v.cancellationDirty[locale] ? { cancellationPolicy: textToLexical(v.cancellation[locale]) } : {}
   try {
@@ -53,9 +64,11 @@ export async function saveSettingsAction(v: SettingsInput): Promise<ActionResult
         depositPct,
         holdMinutes,
         ...policy('th'),
-        omisePublicKey: opt(v.omisePublicKey),
-        omiseSecretKey: opt(v.omiseSecretKey),
-        promptPayId: opt(v.promptPayId),
+        paymentProvider: v.paymentProvider,
+        payMethods,
+        bankName: opt(v.bankName),
+        accountName: opt(v.accountName),
+        accountNumber: opt(v.accountNumber),
         lineChannelToken: opt(v.lineChannelToken),
         lineTarget: opt(v.lineTarget),
         notifyEmail: email || null,

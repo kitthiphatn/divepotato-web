@@ -12,6 +12,7 @@ import {
   type SettingsInput,
   type StaffInput,
 } from '../actions/settings'
+import type { PayMethod, ProviderId } from '@/lib/payments/types'
 import { normalizeUsername, usernameFromEmail } from '@/lib/username'
 
 import { initials, money } from '../format'
@@ -35,6 +36,51 @@ const blankStaff = (): StaffInput => ({
   password: tempPassword(),
 })
 
+type KeyStatus = Record<'omise' | 'stripe', { public: boolean; secret: boolean }>
+
+const ENV_NAMES = {
+  omise: { public: 'OMISE_PUBLIC_KEY', secret: 'OMISE_SECRET_KEY' },
+  stripe: { public: 'STRIPE_PUBLISHABLE_KEY', secret: 'STRIPE_SECRET_KEY' },
+}
+const PROVIDER_CARDS: {
+  id: ProviderId
+  icon: string
+  th: string
+  en: string
+  dth: string
+  den: string
+}[] = [
+  {
+    id: 'demo',
+    icon: 'sparkle',
+    th: 'เดโม',
+    en: 'Demo',
+    dth: 'จำลองการชำระเงิน ไม่ตัดเงินจริง สำหรับทดลองระบบ',
+    den: 'Simulated payments, no real money, for trying the flow',
+  },
+  {
+    id: 'omise',
+    icon: 'card',
+    th: 'Omise',
+    en: 'Omise',
+    dth: 'บัตรและ QR พร้อมเพย์ ยืนยันอัตโนมัติ',
+    den: 'Card and PromptPay QR, confirmed automatically',
+  },
+  {
+    id: 'stripe',
+    icon: 'globe',
+    th: 'Stripe',
+    en: 'Stripe',
+    dth: 'บัตรและ QR พร้อมเพย์ ยืนยันอัตโนมัติ',
+    den: 'Card and PromptPay QR, confirmed automatically',
+  },
+]
+const METHODS: { id: PayMethod; th: string; en: string }[] = [
+  { id: 'card', th: 'บัตรเครดิต/เดบิต', en: 'Credit/debit card' },
+  { id: 'promptpay', th: 'QR พร้อมเพย์ (ยืนยันอัตโนมัติ)', en: 'PromptPay QR (confirmed automatically)' },
+  { id: 'transfer', th: 'โอนเงินแล้วแนบสลิป (ทีมงานตรวจ)', en: 'Bank transfer with slip (staff check)' },
+]
+
 export type StaffRow = {
   id: number
   name: string
@@ -49,11 +95,15 @@ export function SettingsForm({
   value,
   staff,
   balanceDays,
+  payKeys,
+  webhooks,
 }: {
   lang: Lang
   value: SettingsInput
   staff: StaffRow[]
   balanceDays: number
+  payKeys: KeyStatus
+  webhooks: { omise: string; stripe: string }
 }) {
   const L = translator(lang)
   const toast = useToast()
@@ -97,6 +147,9 @@ export function SettingsForm({
       toast(r.message, r.ok)
       if (r.ok) setReset(null)
     })
+  const providerOk =
+    v.paymentProvider === 'demo' ||
+    (payKeys[v.paymentProvider].public && payKeys[v.paymentProvider].secret)
   const soon = <span className="soon">{L('เร็วๆ นี้', 'Coming soon')}</span>
 
   const save = () =>
@@ -233,66 +286,128 @@ export function SettingsForm({
           <h3>{L('ช่องทางรับชำระเงิน', 'Payment channels')}</h3>
           <p className="hint">
             {L(
-              'ระบบชำระเงินออนไลน์เปิดใช้ในเฟสถัดไป ตอนนี้บันทึกคีย์ไว้ก่อนได้',
-              'Online payment goes live in the next phase; you can store the keys now',
+              'ลูกค้าชำระมัดจำบนหน้าเว็บหลังกดจอง คีย์ของ Omise และ Stripe ตั้งในไฟล์ .env บนเซิร์ฟเวอร์',
+              'Customers pay the deposit on the website after booking. Omise and Stripe keys are set in the server .env file',
             )}
           </p>
-          <div className="conn">
-            <div className="cc">
-              <span className="ci">
-                <Icon name="qr" />
-              </span>
-              <b>{L('Omise · พร้อมเพย์', 'Omise · PromptPay')}</b>
-              <p>
+          <div className="conn" role="radiogroup" aria-label={L('ผู้ให้บริการ', 'Provider')}>
+            {PROVIDER_CARDS.map((p) => {
+              const keys = p.id === 'demo' ? null : payKeys[p.id]
+              const env = p.id === 'demo' ? null : ENV_NAMES[p.id]
+              return (
+                <label key={p.id} className={`cc${v.paymentProvider === p.id ? ' on' : ''}`}>
+                  <input
+                    type="radio"
+                    className="sr"
+                    name="paymentProvider"
+                    checked={v.paymentProvider === p.id}
+                    onChange={() => set('paymentProvider', p.id)}
+                  />
+                  <span className="ci">
+                    <Icon name={p.icon} />
+                  </span>
+                  <b>{L(p.th, p.en)}</b>
+                  <p>{L(p.dth, p.den)}</p>
+                  {keys && env ? (
+                    <span className="keys">
+                      {(['public', 'secret'] as const).map((k) => (
+                        <span key={k} className={`pill nodot ${keys[k] ? 'st-paid' : 'st-cancelled'}`}>
+                          {env[k]} {keys[k] ? L('ตั้งแล้ว', 'set') : L('ยังไม่ตั้ง', 'missing')}
+                        </span>
+                      ))}
+                    </span>
+                  ) : (
+                    <span className="pill nodot st-review">
+                      {L('ไม่ต้องใช้คีย์', 'No keys needed')}
+                    </span>
+                  )}
+                </label>
+              )
+            })}
+          </div>
+          {v.paymentProvider === 'demo' ? (
+            <div className="banner y">
+              <Icon name="alert" />
+              <span>
                 {L(
-                  'สแกน QR ยืนยันอัตโนมัติ ไม่ต้องตรวจสลิป',
-                  'QR payment, confirmed automatically',
+                  'โหมดเดโม: ลูกค้าเห็นแบบฟอร์มจำลอง ไม่มีการตัดเงินจริง ใช้บัตรทดสอบ 4242 4242 4242 4242 เปลี่ยนเป็น Omise หรือ Stripe ก่อนเปิดใช้งานจริง',
+                  'Demo mode: customers see a simulated form and no money is taken. Test card 4242 4242 4242 4242. Switch to Omise or Stripe before going live.',
                 )}
-              </p>
-              {soon}
-            </div>
-            <div className="cc">
-              <span className="ci">
-                <Icon name="card" />
               </span>
-              <b>{L('Omise · บัตรเครดิต', 'Omise · Card')}</b>
-              <p>Visa, Mastercard, JCB</p>
-              {soon}
             </div>
-            <div className="cc on">
-              <span className="ci">
-                <Icon name="bank" />
-              </span>
-              <b>{L('โอนผ่านธนาคาร', 'Bank transfer')}</b>
-              <p>{L('ลูกค้าแนบสลิป ทีมงานตรวจเอง', 'Customer uploads a slip; staff review it')}</p>
-              <span className="pill st-paid">{L('ใช้งานอยู่', 'In use')}</span>
-            </div>
-          </div>
-          <div className="f2" style={{ marginTop: 18 }}>
-            <label className="field">
-              <span>Omise public key</span>
+          ) : (
+            !providerOk && (
+              <div className="banner red">
+                <Icon name="alert" />
+                <span>
+                  {L(
+                    `ยังไม่ได้ตั้งคีย์ ${ENV_NAMES[v.paymentProvider].public} และ ${ENV_NAMES[v.paymentProvider].secret} ในไฟล์ .env หน้าชำระเงินจะซ่อนบัตรและ QR จนกว่าจะตั้งคีย์และรีสตาร์ตเว็บ`,
+                    `${ENV_NAMES[v.paymentProvider].public} and ${ENV_NAMES[v.paymentProvider].secret} are not set in .env. The pay page hides card and QR until both are set and the site is restarted.`,
+                  )}
+                </span>
+              </div>
+            )
+          )}
+
+          <span className="lbl2">{L('ช่องทางที่เปิดให้ลูกค้า', 'Methods offered')}</span>
+          {METHODS.map((m) => (
+            <label key={m.id} className="chk">
               <input
-                className="inp"
-                autoComplete="off"
-                spellCheck={false}
-                {...text('omisePublicKey')}
+                type="checkbox"
+                checked={v.payMethods.includes(m.id)}
+                onChange={(e) =>
+                  set(
+                    'payMethods',
+                    e.target.checked
+                      ? [...v.payMethods, m.id]
+                      : v.payMethods.filter((x) => x !== m.id),
+                  )
+                }
               />
+              <span>
+                {L(m.th, m.en)}
+                {m.id !== 'transfer' && !providerOk && (
+                  <small className="muted"> · {L('ซ่อนอยู่ ยังไม่มีคีย์', 'hidden, no keys')}</small>
+                )}
+              </span>
+            </label>
+          ))}
+
+          <div className="f3" style={{ marginTop: 18 }}>
+            <label className="field">
+              <span>{L('ธนาคาร', 'Bank')}</span>
+              <input className="inp" {...text('bankName')} placeholder={L('เช่น กสิกรไทย', 'e.g. Kasikornbank')} />
             </label>
             <label className="field">
-              <span>Omise secret key</span>
-              <input
-                className="inp"
-                type="password"
-                autoComplete="new-password"
-                spellCheck={false}
-                {...text('omiseSecretKey')}
-              />
+              <span>{L('ชื่อบัญชี', 'Account name')}</span>
+              <input className="inp" {...text('accountName')} />
+            </label>
+            <label className="field">
+              <span>{L('เลขที่บัญชี', 'Account number')}</span>
+              <input className="inp num" inputMode="numeric" {...text('accountNumber')} />
             </label>
           </div>
-          <label className="field">
-            <span>PromptPay ID</span>
-            <input className="inp num" {...text('promptPayId')} />
-          </label>
+          {v.payMethods.includes('transfer') && !v.accountNumber.trim() && (
+            <p className="hint warn">
+              <Icon name="alert" />{' '}
+              {L(
+                'ใส่เลขที่บัญชีก่อน ไม่อย่างนั้นหน้าชำระเงินจะไม่แสดงการโอนเงิน',
+                'Add the account number, otherwise the pay page hides bank transfer',
+              )}
+            </p>
+          )}
+
+          <span className="lbl2">{L('Webhook สำหรับแดชบอร์ดผู้ให้บริการ', 'Webhooks for the provider dashboards')}</span>
+          <dl className="kv" style={{ marginTop: 8 }}>
+            <dt>Omise</dt>
+            <dd className="num">{webhooks.omise}</dd>
+            <dt>Stripe</dt>
+            <dd className="num">
+              {webhooks.stripe}
+              <br />
+              <small className="muted">payment_intent.succeeded, payment_intent.payment_failed</small>
+            </dd>
+          </dl>
         </section>
 
         <section className="card fsec" id="set-line">

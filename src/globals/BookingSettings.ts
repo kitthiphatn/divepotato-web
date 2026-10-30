@@ -4,8 +4,8 @@ import { adminField, adminOnly } from '../access/roles'
 import { GROUPS } from '../collections/groups'
 import { revalidateSite } from '../lib/revalidate'
 
-// Booking and payment settings. Admin only; the payment/LINE fields are stored for P2 and are
-// not used by any integration yet.
+// Booking and payment settings. Admin only. The payment provider (demo, Omise or Stripe) and the
+// methods offered drive the public pay page; the LINE fields are not used by any integration yet.
 export const BookingSettings: GlobalConfig = {
   slug: 'booking-settings',
   label: { th: 'ตั้งค่าการจองและชำระเงิน', en: 'Booking settings' },
@@ -44,18 +44,46 @@ export const BookingSettings: GlobalConfig = {
     },
     {
       type: 'collapsible',
-      label: { th: 'Omise และ PromptPay', en: 'Omise and PromptPay' },
-      fields: [
-        { name: 'omisePublicKey', label: 'Omise public key', type: 'text' },
-        {
-          name: 'omiseSecretKey',
-          label: 'Omise secret key',
-          type: 'text',
-          // Never shown to anyone but admins (also hidden from the API for other roles)
-          access: { read: adminField, update: adminField },
-          admin: { description: { th: 'ใช้ในเฟส 2', en: 'Used from phase 2' } },
+      label: { th: 'การรับชำระเงินออนไลน์', en: 'Online payment' },
+      admin: {
+        description: {
+          th: 'คีย์ของ Omise และ Stripe ตั้งในไฟล์ .env บนเซิร์ฟเวอร์ ไม่เก็บในฐานข้อมูล',
+          en: 'Omise and Stripe keys are set in the server .env file, never in the database',
         },
-        { name: 'promptPayId', label: 'PromptPay ID', type: 'text' },
+      },
+      fields: [
+        {
+          name: 'paymentProvider',
+          label: { th: 'ผู้ให้บริการรับชำระเงิน', en: 'Payment provider' },
+          type: 'select',
+          required: true,
+          defaultValue: 'demo',
+          options: [
+            { label: { th: 'เดโม (ไม่ตัดเงินจริง)', en: 'Demo (no real money)' }, value: 'demo' },
+            { label: 'Omise', value: 'omise' },
+            { label: 'Stripe', value: 'stripe' },
+          ],
+        },
+        {
+          name: 'payMethods',
+          label: { th: 'ช่องทางที่เปิดให้ลูกค้า', en: 'Methods offered' },
+          type: 'select',
+          hasMany: true,
+          defaultValue: ['card', 'promptpay', 'transfer'],
+          options: [
+            { label: { th: 'บัตรเครดิต/เดบิต', en: 'Credit/debit card' }, value: 'card' },
+            { label: { th: 'QR พร้อมเพย์', en: 'PromptPay QR' }, value: 'promptpay' },
+            { label: { th: 'โอนเงินแล้วแนบสลิป', en: 'Bank transfer with slip' }, value: 'transfer' },
+          ],
+        },
+        {
+          type: 'row',
+          fields: [
+            { name: 'bankName', label: { th: 'ธนาคาร', en: 'Bank' }, type: 'text' },
+            { name: 'accountName', label: { th: 'ชื่อบัญชี', en: 'Account name' }, type: 'text' },
+            { name: 'accountNumber', label: { th: 'เลขที่บัญชี', en: 'Account number' }, type: 'text' },
+          ],
+        },
       ],
     },
     {

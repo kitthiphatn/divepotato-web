@@ -729,7 +729,11 @@ async function seedGlobals(payload: Payload, photos: Map<string, number>) {
     data: {
       depositPct: 30,
       holdMinutes: 15,
-      promptPayId: '0000000000 (sample)',
+      paymentProvider: 'demo',
+      payMethods: ['card', 'promptpay', 'transfer'],
+      bankName: 'ธนาคารตัวอย่าง (sample)',
+      accountName: 'Dive Potato Scuba Diving (sample)',
+      accountNumber: '000-0-00000-0',
       notifyEmail: 'bookings@divepotato.local',
       cancellationPolicy: richText(
         'ยกเลิกก่อนเดินทาง 30 วันขึ้นไป คืนมัดจำเต็มจำนวน',

@@ -5452,3 +5452,39 @@ p.pager {
     grid-column: 1 / span 2;
   }
 }
+
+/* ---------- payment settings ---------- */
+label.cc {
+  cursor: pointer;
+}
+label.cc:has(input:focus-visible) {
+  outline: 2px solid var(--y);
+  outline-offset: 2px;
+}
+.cc .keys {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: auto;
+}
+.cc .keys .pill {
+  font-size: 11px;
+}
+.fsec .lbl2 {
+  display: block;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--mu);
+  margin-top: 22px;
+}
+.fsec .hint.warn {
+  color: var(--amb);
+  margin-top: 8px;
+}
+.pill.demo {
+  background: var(--ysoft);
+  color: var(--ytx);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+}

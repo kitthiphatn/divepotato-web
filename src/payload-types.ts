@@ -187,6 +187,7 @@ export interface Booking {
   code?: string | null;
   status: 'hold' | 'pending_review' | 'deposit_paid' | 'paid' | 'cancelled' | 'refunded' | 'completed' | 'expired';
   holdExpiresAt?: string | null;
+  payToken?: string | null;
   source?: ('website' | 'line' | 'phone' | 'walk_in' | 'agent') | null;
   departure: number | Departure;
   customer: number | Customer;
@@ -478,7 +479,8 @@ export interface User {
 export interface Payment {
   id: number;
   booking: number | Booking;
-  provider: 'omise' | 'slip' | 'cash' | 'transfer';
+  provider: 'omise' | 'stripe' | 'demo' | 'slip' | 'cash' | 'transfer';
+  method?: ('card' | 'promptpay' | 'transfer' | 'cash') | null;
   kind: 'deposit' | 'balance' | 'refund';
   amount: number;
   status: 'pending' | 'succeeded' | 'failed' | 'rejected';
@@ -748,6 +750,7 @@ export interface BookingsSelect<T extends boolean = true> {
   code?: T;
   status?: T;
   holdExpiresAt?: T;
+  payToken?: T;
   source?: T;
   departure?: T;
   customer?: T;
@@ -820,6 +823,7 @@ export interface CustomersSelect<T extends boolean = true> {
 export interface PaymentsSelect<T extends boolean = true> {
   booking?: T;
   provider?: T;
+  method?: T;
   kind?: T;
   amount?: T;
   status?: T;
@@ -1120,12 +1124,11 @@ export interface BookingSetting {
     };
     [k: string]: unknown;
   } | null;
-  omisePublicKey?: string | null;
-  /**
-   * Used from phase 2
-   */
-  omiseSecretKey?: string | null;
-  promptPayId?: string | null;
+  paymentProvider: 'demo' | 'omise' | 'stripe';
+  payMethods?: ('card' | 'promptpay' | 'transfer')[] | null;
+  bankName?: string | null;
+  accountName?: string | null;
+  accountNumber?: string | null;
   lineChannelToken?: string | null;
   lineTarget?: string | null;
   notifyEmail?: string | null;
@@ -1324,9 +1327,11 @@ export interface BookingSettingsSelect<T extends boolean = true> {
   depositPct?: T;
   holdMinutes?: T;
   cancellationPolicy?: T;
-  omisePublicKey?: T;
-  omiseSecretKey?: T;
-  promptPayId?: T;
+  paymentProvider?: T;
+  payMethods?: T;
+  bankName?: T;
+  accountName?: T;
+  accountNumber?: T;
   lineChannelToken?: T;
   lineTarget?: T;
   notifyEmail?: T;

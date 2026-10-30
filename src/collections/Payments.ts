@@ -4,8 +4,9 @@ import { adminOnly, bookingEditors } from '../access/roles'
 import { auditAfterChange, auditAfterDelete } from '../hooks/audit'
 import { GROUPS } from './groups'
 
-// Payment records only. P0 has no Omise integration: these fields are what P2/P3 will fill.
-// Staff review slips and record payments at the shop; only admins delete payment records.
+// One record per payment attempt: online card/QR charges (Omise, Stripe or the demo provider,
+// `ref` = the provider's charge or PaymentIntent id), transfer slips customers upload, and
+// payments staff record at the shop. Only admins delete payment records.
 export const Payments: CollectionConfig = {
   slug: 'payments',
   labels: {
@@ -58,9 +59,22 @@ export const Payments: CollectionConfig = {
           defaultValue: 'slip',
           options: [
             { label: 'Omise', value: 'omise' },
+            { label: 'Stripe', value: 'stripe' },
+            { label: { th: 'เดโม', en: 'Demo' }, value: 'demo' },
             { label: { th: 'สลิปโอนเงิน', en: 'Transfer slip' }, value: 'slip' },
             { label: { th: 'เงินสด', en: 'Cash' }, value: 'cash' },
             { label: { th: 'โอนเงิน', en: 'Bank transfer' }, value: 'transfer' },
+          ],
+        },
+        {
+          name: 'method',
+          label: { th: 'วิธีชำระ', en: 'Method' },
+          type: 'select',
+          options: [
+            { label: { th: 'บัตร', en: 'Card' }, value: 'card' },
+            { label: { th: 'QR พร้อมเพย์', en: 'PromptPay QR' }, value: 'promptpay' },
+            { label: { th: 'โอนเงิน', en: 'Bank transfer' }, value: 'transfer' },
+            { label: { th: 'เงินสด', en: 'Cash' }, value: 'cash' },
           ],
         },
         {
