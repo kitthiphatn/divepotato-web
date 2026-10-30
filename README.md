@@ -137,4 +137,12 @@ is a dev (pushed) database, so build against a throwaway database, as the Lompra
 DATABASE_URL=file:/tmp/build.db npm run build
 ```
 
+## Deploy (Ubuntu mini PC) / ขึ้นเว็บเดโมบนมินิพีซี
+
+A self-hosted demo runs on an Ubuntu Server 24.04 mini PC behind a Cloudflare Tunnel at
+https://demo.cleanandcare.live: install, tunnel, nightly backups, restore and updates are scripted in
+`deploy/ubuntu/`. Step-by-step guide (Thai first): [deploy/ubuntu/README.md](deploy/ubuntu/README.md).
+
+ขั้นตอนติดตั้งแบบทีละขั้น (ภาษาไทย) อยู่ที่ [deploy/ubuntu/README.md](deploy/ubuntu/README.md)
+
 See [CLAUDE.md](CLAUDE.md) for the project phases and working rules.
