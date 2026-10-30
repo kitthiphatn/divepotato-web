@@ -3,6 +3,8 @@
 import { useRouter } from 'next/navigation'
 import { useState } from 'react'
 
+import { Dropdown } from './Dropdown'
+
 type Labels = {
   label: string
   kind: string
@@ -38,7 +40,8 @@ export function QuickSearch({
       aria-label={t.label}
       onSubmit={(e) => {
         e.preventDefault()
-        if (kind === 'course') return router.push(`/${locale}/courses${month ? `?month=${month}` : ''}`)
+        if (kind === 'course')
+          return router.push(`/${locale}/courses${month ? `?month=${month}` : ''}`)
         const q = new URLSearchParams()
         if (kind === 'fun') q.set('type', 'daytrip')
         if (month) q.set('month', month)
@@ -60,27 +63,21 @@ export function QuickSearch({
           </button>
         ))}
       </div>
-      <label className="qf">
-        <span>{t.month}</span>
-        <select value={month} onChange={(e) => setMonth(e.target.value)}>
-          <option value="">{t.anyMonth}</option>
-          {months.map((m) => (
-            <option key={m.key} value={m.key}>
-              {m.label}
-            </option>
-          ))}
-        </select>
-      </label>
-      <label className="qf">
-        <span>{t.people}</span>
-        <select value={pax} onChange={(e) => setPax(e.target.value)}>
-          {people.map((p, i) => (
-            <option key={p} value={String(i + 1)}>
-              {p}
-            </option>
-          ))}
-        </select>
-      </label>
+      <Dropdown
+        label={t.month}
+        value={month}
+        onChange={setMonth}
+        options={[
+          { value: '', label: t.anyMonth },
+          ...months.map((m) => ({ value: m.key, label: m.label })),
+        ]}
+      />
+      <Dropdown
+        label={t.people}
+        value={pax}
+        onChange={setPax}
+        options={people.map((p, i) => ({ value: String(i + 1), label: p }))}
+      />
       <button className="pill k" type="submit">
         {t.search}
       </button>
