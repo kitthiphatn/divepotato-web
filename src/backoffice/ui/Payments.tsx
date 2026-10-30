@@ -27,6 +27,7 @@ export type PaymentRow = {
   kind: string
   provider: string
   method: string
+  slipCheck: string
   amount: number
   status: string
   ref: string
@@ -175,6 +176,12 @@ export function PaymentsList({
                     : ''}
                   {p.ref ? ` · ${p.ref}` : ''}
                   {p.reviewedBy ? ` · ${L('ตรวจโดย', 'by')} ${p.reviewedBy}` : ''}
+                  {p.slipCheck === 'duplicate' && (
+                    <span className="pill nodot st-cancelled">{L('สลิปซ้ำ', 'Duplicate slip')}</span>
+                  )}
+                  {p.slipCheck === 'no_qr' && (
+                    <span className="pill nodot st-review">{L('ไม่พบ QR', 'No QR')}</span>
+                  )}
                 </small>
               </span>
               <span className="amt">

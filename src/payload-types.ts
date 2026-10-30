@@ -489,6 +489,11 @@ export interface Payment {
    */
   ref?: string | null;
   slip?: (number | null) | Media;
+  slipRef?: string | null;
+  /**
+   * Only checks there is a QR and it was not used before; not the amount or receiver
+   */
+  slipCheck?: ('ok' | 'no_qr' | 'duplicate') | null;
   reviewedBy?: (number | null) | User;
   reviewedAt?: string | null;
   updatedAt: string;
@@ -829,6 +834,8 @@ export interface PaymentsSelect<T extends boolean = true> {
   status?: T;
   ref?: T;
   slip?: T;
+  slipRef?: T;
+  slipCheck?: T;
   reviewedBy?: T;
   reviewedAt?: T;
   updatedAt?: T;

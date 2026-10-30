@@ -96,6 +96,10 @@ export type PaymentVM = {
   status: string
   ref: string
   slip: { url: string; alt: string } | null
+  // QR read from a transfer slip, and for a duplicate the booking that used it first
+  slipRef: string
+  slipCheck: string
+  dupOf: { id: number; code: string } | null
   at: string
   reviewedBy: string
 }
@@ -155,6 +159,20 @@ export function dueOf(b: Pick<BookingVM, 'payments' | 'status' | 'total'>) {
   return Math.max(0, b.total - paidOf(b))
 }
 
+// The booking whose payment carried this slip's QR first (any booking), for the duplicate badge
+async function firstUseOf(s: Session, p: Payment) {
+  const res = await s.payload.find({
+    collection: 'payments',
+    where: { and: [{ slipRef: { equals: p.slipRef } }, { id: { not_equals: p.id } }] },
+    sort: 'createdAt',
+    limit: 1,
+    depth: 1,
+    ...s.as,
+  })
+  const b = obj<Booking>(res.docs[0]?.booking as Rel<Booking>)
+  return b ? { id: b.id, code: b.code ?? `#${b.id}` } : null
+}
+
 // Bookings with their departure, customer and payments
 export async function findBookings(s: Session, where?: Where, limit = 1000): Promise<BookingVM[]> {
   const res = await s.payload.find({
@@ -198,6 +216,9 @@ export async function findBookings(s: Session, where?: Where, limit = 1000): Pro
         status: p.status,
         ref: p.ref ?? '',
         slip: slip?.url ? { url: slip.url, alt: slip.alt ?? '' } : null,
+        slipRef: p.slipRef ?? '',
+        slipCheck: p.slipCheck ?? '',
+        dupOf: p.slipCheck === 'duplicate' && p.slipRef ? await firstUseOf(s, p) : null,
         at: p.createdAt,
         reviewedBy: userName(p.reviewedBy),
       })

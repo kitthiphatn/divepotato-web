@@ -171,6 +171,43 @@ function SlipBox({ p, L }: { p: PaymentVM; L: Tr }) {
   )
 }
 
+// Result of reading the slip's QR on upload. The QR only holds the bank and transaction
+// reference, so "QR ok" says nothing about the amount or the receiving account.
+function SlipCheck({ p, L }: { p: PaymentVM; L: Tr }) {
+  if (!p.slipCheck) return null
+  return (
+    <div className={`slipchk ${p.slipCheck}`}>
+      {p.slipCheck === 'ok' ? (
+        <span className="pill st-paid">{L('QR ถูกต้อง ไม่ซ้ำ', 'QR ok, not used before')}</span>
+      ) : p.slipCheck === 'no_qr' ? (
+        <span className="pill st-review">
+          {L('ไม่พบ QR บนสลิป ตรวจด้วยตัวเอง', 'No QR found, check manually')}
+        </span>
+      ) : (
+        <span className="pill st-cancelled">
+          {L('สลิปซ้ำ ใช้แล้วกับการจอง ', 'Duplicate slip, used on booking ')}
+          {p.dupOf ? (
+            <Link href={`${BO}/bookings?open=${p.dupOf.id}`}>{p.dupOf.code}</Link>
+          ) : (
+            '-'
+          )}
+        </span>
+      )}
+      {p.slipRef && (
+        <small className="num" title={p.slipRef}>
+          {L('อ้างอิงจาก QR', 'QR ref')} {p.slipRef}
+        </small>
+      )}
+      <small>
+        {L(
+          'QR บนสลิปไม่มียอดเงินหรือบัญชีผู้รับ ตรวจยอดเข้าบัญชีก่อนอนุมัติเสมอ',
+          'The slip QR has no amount or receiver; always check the account before approving',
+        )}
+      </small>
+    </div>
+  )
+}
+
 const payIcon = (p: PaymentVM) =>
   p.provider === 'cash'
     ? 'wallet'
@@ -591,6 +628,7 @@ function Drawer({
                   {fd(ymd(pendingPay.at), lang)} {shopTime(pendingPay.at)} ·{' '}
                   {pair(lang, PROVIDER_LABEL[pendingPay.provider], pendingPay.provider)}
                 </p>
+                <SlipCheck p={pendingPay} L={L} />
                 <ul className="checks">
                   <li
                     className={

@@ -3,6 +3,7 @@ import * as migration_20261028_074547_home_hero_slides from './20261028_074547_h
 import * as migration_20261028_115304_login_with_username from './20261028_115304_login_with_username';
 import * as migration_20261030_141416_site_map_location from './20261030_141416_site_map_location';
 import * as migration_20261030_172212_online_payments from './20261030_172212_online_payments';
+import * as migration_20261030_173851_slip_check from './20261030_173851_slip_check';
 
 export const migrations = [
   {
@@ -28,6 +29,11 @@ export const migrations = [
   {
     up: migration_20261030_172212_online_payments.up,
     down: migration_20261030_172212_online_payments.down,
-    name: '20261030_172212_online_payments'
+    name: '20261030_172212_online_payments',
+  },
+  {
+    up: migration_20261030_173851_slip_check.up,
+    down: migration_20261030_173851_slip_check.down,
+    name: '20261030_173851_slip_check'
   },
 ];

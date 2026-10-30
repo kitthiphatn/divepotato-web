@@ -13,6 +13,7 @@ import { adapterFor, getPayConfig, type PayConfig } from '@/lib/payments/config'
 import { reconcilePayment, withEvents } from '@/lib/payments/confirm'
 import { simulateDemoPaid } from '@/lib/payments/demo'
 import { bookingFromLink, payPath } from '@/lib/payments/link'
+import { checkSlip } from '@/lib/payments/slip'
 import type { Booking, Customer } from '@/payload-types'
 import { getDict } from '@/site/i18n'
 import { siteUrl } from '@/site/seo'
@@ -205,8 +206,9 @@ function sniff(b: Buffer): string | null {
   return null
 }
 
-// Bank transfer: save the slip, record a pending payment and hand the booking to staff
-// (pending_review keeps its seats until they approve or reject the slip)
+// Bank transfer: save the slip, read its QR (see lib/payments/slip), record a pending payment
+// and hand the booking to staff (pending_review keeps its seats until they approve or reject the
+// slip). Never approved automatically, whatever the QR check says.
 export async function uploadSlipAction(form: FormData): Promise<PayResult> {
   const link = {
     locale: String(form.get('locale') ?? ''),
@@ -225,6 +227,7 @@ export async function uploadSlipAction(form: FormData): Promise<PayResult> {
   const type = sniff(data)
   if (!type) return { ok: false, error: t.slipBad }
   try {
+    const check = await checkSlip(payload, data)
     // Random file name so slips can't be found by guessing
     const name = `slip-${booking.code}-${randomBytes(8).toString('hex')}.${SLIP_TYPES[type]}`
     const media = await payload.create({
@@ -243,6 +246,8 @@ export async function uploadSlipAction(form: FormData): Promise<PayResult> {
         amount: booking.deposit!,
         status: 'pending',
         slip: media.id,
+        slipRef: check.slipRef,
+        slipCheck: check.slipCheck,
       },
       overrideAccess: true,
     })
@@ -251,7 +256,9 @@ export async function uploadSlipAction(form: FormData): Promise<PayResult> {
       id: booking.id,
       data: {
         status: 'pending_review',
-        timeline: withEvents(booking, [{ event: 'slip uploaded' }]),
+        timeline: withEvents(booking, [
+          { event: 'slip uploaded', note: check.slipCheck === 'ok' ? undefined : check.slipCheck },
+        ]),
       },
       overrideAccess: true,
     })

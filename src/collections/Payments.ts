@@ -134,6 +134,36 @@ export const Payments: CollectionConfig = {
       type: 'row',
       fields: [
         {
+          // Text of the QR code on the slip (bank code + transaction reference), read on upload
+          name: 'slipRef',
+          label: { th: 'เลขอ้างอิงจาก QR บนสลิป', en: 'Slip QR reference' },
+          type: 'text',
+          index: true,
+          admin: { readOnly: true },
+        },
+        {
+          name: 'slipCheck',
+          label: { th: 'ผลตรวจ QR บนสลิป', en: 'Slip QR check' },
+          type: 'select',
+          admin: {
+            readOnly: true,
+            description: {
+              th: 'ตรวจแค่ว่ามี QR และไม่ซ้ำกับสลิปอื่น ไม่ได้ตรวจยอดเงินหรือบัญชีผู้รับ',
+              en: 'Only checks there is a QR and it was not used before; not the amount or receiver',
+            },
+          },
+          options: [
+            { label: { th: 'พบ QR', en: 'QR ok' }, value: 'ok' },
+            { label: { th: 'ไม่พบ QR', en: 'No QR found' }, value: 'no_qr' },
+            { label: { th: 'สลิปซ้ำ', en: 'Duplicate slip' }, value: 'duplicate' },
+          ],
+        },
+      ],
+    },
+    {
+      type: 'row',
+      fields: [
+        {
           name: 'reviewedBy',
           label: { th: 'ตรวจโดย', en: 'Reviewed by' },
           type: 'relationship',

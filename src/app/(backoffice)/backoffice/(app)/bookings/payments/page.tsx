@@ -72,6 +72,7 @@ export default async function PaymentsPage({
       kind: p.kind,
       provider: p.provider,
       method: p.method ?? '',
+      slipCheck: p.slipCheck ?? '',
       amount: p.amount ?? 0,
       status: p.status,
       ref: p.ref ?? '',

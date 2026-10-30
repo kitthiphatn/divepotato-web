@@ -5488,3 +5488,22 @@ label.cc:has(input:focus-visible) {
   font-weight: 700;
   letter-spacing: 0.04em;
 }
+.slipchk {
+  display: grid;
+  gap: 4px;
+  justify-items: start;
+  margin: 10px 0 4px;
+}
+.slipchk .pill {
+  white-space: normal;
+}
+.slipchk .pill a {
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  margin-left: 4px;
+}
+.slipchk small {
+  color: var(--mu);
+  font-size: 12px;
+  overflow-wrap: anywhere;
+}
