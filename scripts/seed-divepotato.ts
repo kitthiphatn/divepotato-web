@@ -588,6 +588,7 @@ async function seedGlobals(payload: Payload, photos: Map<string, number>) {
         email: 'hello@divepotato.local',
         hours: 'ทุกวัน 08:00-19:00',
         address: 'ที่อยู่ร้าน (ตัวอย่าง)',
+        mapLocation: '13.83776148801082, 100.60349854232841',
       },
       hero: {
         title: 'ดำน้ำกับ Dive Potato',

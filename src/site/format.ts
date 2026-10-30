@@ -4,6 +4,15 @@ import type { Course, Departure, Trip } from '@/payload-types'
 
 export const money = formatTHB
 
+// "13.8377, 100.6035" (as copied from Google Maps) -> [lat, lng], or null if it isn't valid
+export function latLng(value: string | null | undefined): [number, number] | null {
+  const m = value?.trim().match(/^(-?\d{1,2}(?:\.\d+)?)\s*,\s*(-?\d{1,3}(?:\.\d+)?)$/)
+  if (!m) return null
+  const lat = Number(m[1])
+  const lng = Number(m[2])
+  return Math.abs(lat) <= 90 && Math.abs(lng) <= 180 ? [lat, lng] : null
+}
+
 export const depositOf = (price: number | null | undefined, pct: number) =>
   Math.round(((price ?? 0) * pct) / 100)
 

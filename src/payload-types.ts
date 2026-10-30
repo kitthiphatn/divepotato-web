@@ -1156,6 +1156,10 @@ export interface SiteSetting {
     youtubeUrl?: string | null;
     hours?: string | null;
     address?: string | null;
+    /**
+     * Latitude, longitude from Google Maps, e.g. 13.8377, 100.6035
+     */
+    mapLocation?: string | null;
   };
   hero?: {
     title?: string | null;
@@ -1352,6 +1356,7 @@ export interface SiteSettingsSelect<T extends boolean = true> {
         youtubeUrl?: T;
         hours?: T;
         address?: T;
+        mapLocation?: T;
       };
   hero?:
     | T

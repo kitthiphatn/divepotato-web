@@ -135,6 +135,7 @@ async function SiteTab({ s }: { s: Session }) {
           youtubeUrl: c.youtubeUrl ?? '',
           hours: p(c.hours, en.contact?.hours),
           address: p(c.address, en.contact?.address),
+          mapLocation: c.mapLocation ?? '',
         },
         hero: {
           title: p(th.hero?.title, en.hero?.title),
