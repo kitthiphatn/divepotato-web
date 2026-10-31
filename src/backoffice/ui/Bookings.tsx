@@ -23,6 +23,7 @@ import { addDays, diffDays, fd, fdy, frange, initials, money, shopTime, ymd } fr
 import {
   CERT_LABEL,
   KIND_LABEL,
+  METHOD_LABEL,
   pair,
   PROVIDER_LABEL,
   SOURCE_LABEL,
@@ -32,40 +33,21 @@ import {
   type Lang,
 } from '../i18n'
 import { Icon } from '../icons'
+import {
+  BOOKING_CHIPS,
+  bookingChipMatch,
+  bookingTotals,
+  filterBookings,
+  listQuery,
+} from '../lists'
 import { BO } from '../nav'
 import type { ActionResult } from '../server'
-import { StatusPill } from './bits'
+import { ListSummary, StatusPill } from './bits'
 import { SubTabs } from './fields'
 import { Modal, Soon } from './Modal'
 import { useToast } from './Toast'
 
 type Tr = ReturnType<typeof translator>
-
-const ORDER: Record<string, number> = {
-  pending_review: 0,
-  hold: 1,
-  deposit_paid: 2,
-  paid: 3,
-  completed: 4,
-  cancelled: 5,
-  refunded: 5,
-  expired: 6,
-}
-// Status chips; "cancelled" also covers refunded bookings
-const CHIPS = [
-  ['review', 'pending_review'],
-  ['hold', 'hold'],
-  ['deposit', 'deposit_paid'],
-  ['paid', 'paid'],
-  ['done', 'completed'],
-  ['cancelled', 'cancelled'],
-  ['expired', 'expired'],
-] as const
-const chipMatch = (chip: string, status: string) =>
-  chip === 'all' ||
-  CHIPS.some(
-    ([k, st]) => k === chip && (st === status || (k === 'cancelled' && status === 'refunded')),
-  )
 
 const minuteNow = () => Math.floor(Date.now() / 60000)
 const subscribeMinute = (cb: () => void) => {
@@ -140,12 +122,23 @@ function eventText(e: { event: string; note: string }, L: Tr, lang: Lang) {
         'slip approved': L('อนุมัติสลิป', 'Slip approved'),
         'slip rejected': L('ปฏิเสธสลิป', 'Slip rejected'),
         'payment recorded': L('บันทึกการรับเงิน', 'Payment recorded'),
+        'payment received': L('รับชำระออนไลน์', 'Online payment received'),
+        'payment failed': L('ชำระออนไลน์ไม่สำเร็จ', 'Online payment failed'),
+        'payment mismatch': L(
+          'ยอดหรือการจองไม่ตรงกับรายการชำระ ตรวจสอบด่วน',
+          'Payment does not match the booking, check it',
+        ),
+        'paid after hold expired': L('ชำระหลังหมดเวลากันที่นั่ง', 'Paid after the hold expired'),
+        'refund needed': L('ต้องคืนเงินลูกค้า', 'Refund needed'),
+        'check duplicate payment': L('อาจชำระซ้ำ ตรวจสอบ', 'Possible duplicate payment, check'),
+        'slip uploaded': L('ลูกค้าส่งสลิป', 'Customer sent a slip'),
+        'website booking (hold)': L('จองผ่านเว็บไซต์', 'Website booking'),
         cancelled: L('ยกเลิกการจอง', 'Booking cancelled'),
       }[e.event] ?? e.event
   return e.note ? `${text} · ${e.note}` : text
 }
 
-function SlipBox({ p, L }: { p: PaymentVM; L: Tr }) {
+export function SlipBox({ p, L }: { p: PaymentVM; L: Tr }) {
   if (p.slip)
     // eslint-disable-next-line @next/next/no-img-element
     return <img src={p.slip.url} alt={p.slip.alt || L('สลิป', 'Slip')} />
@@ -159,14 +152,65 @@ function SlipBox({ p, L }: { p: PaymentVM; L: Tr }) {
   )
 }
 
-const payIcon = (p: PaymentVM) =>
+// Result of reading the slip's QR on upload. The QR only holds the bank and transaction
+// reference, so "QR ok" says nothing about the amount or the receiving account.
+export function SlipCheck({ p, L }: { p: PaymentVM; L: Tr }) {
+  if (!p.slipCheck) return null
+  return (
+    <div className={`slipchk ${p.slipCheck}`}>
+      {p.slipCheck === 'ok' ? (
+        <span className="pill st-paid">{L('QR ถูกต้อง ไม่ซ้ำ', 'QR ok, not used before')}</span>
+      ) : p.slipCheck === 'no_qr' ? (
+        <span className="pill st-review">
+          {L('ไม่พบ QR บนสลิป ตรวจด้วยตัวเอง', 'No QR found, check manually')}
+        </span>
+      ) : (
+        <span className="pill st-cancelled">
+          {L('สลิปซ้ำ ใช้แล้วกับ ', 'Duplicate slip, used on ')}
+          {p.dupOf ? (
+            <Link href={p.dupOf.href}>{p.dupOf.code}</Link>
+          ) : (
+            '-'
+          )}
+        </span>
+      )}
+      {p.slipRef && (
+        <small className="num" title={p.slipRef}>
+          {L('อ้างอิงจาก QR', 'QR ref')} {p.slipRef}
+        </small>
+      )}
+      <small>
+        {L(
+          'QR บนสลิปไม่มียอดเงินหรือบัญชีผู้รับ ตรวจยอดเข้าบัญชีก่อนอนุมัติเสมอ',
+          'The slip QR has no amount or receiver; always check the account before approving',
+        )}
+      </small>
+    </div>
+  )
+}
+
+export const payIcon = (p: PaymentVM) =>
   p.provider === 'cash'
     ? 'wallet'
     : p.provider === 'transfer'
       ? 'bank'
-      : p.provider === 'omise'
-        ? 'card'
-        : 'slip'
+      : p.method === 'promptpay'
+        ? 'qr'
+        : p.method === 'card' || p.provider === 'omise'
+          ? 'card'
+          : 'slip'
+
+// "Omise · PromptPay QR", "Transfer slip", with a DEMO badge for simulated payments
+export function PayVia({ p, lang }: { p: PaymentVM; lang: Lang }) {
+  const method = p.method && p.provider !== 'slip' && p.provider !== 'cash' ? METHOD_LABEL[p.method] : null
+  return (
+    <>
+      {p.provider === 'demo' && <span className="pill nodot demo">DEMO</span>}{' '}
+      {pair(lang, PROVIDER_LABEL[p.provider], p.provider)}
+      {method ? ` · ${pair(lang, method)}` : ''}
+    </>
+  )
+}
 
 type ModalKind = null | 'pay' | 'reject' | 'cancel' | 'slip' | 'new'
 
@@ -234,28 +278,13 @@ export function BookingsClient(props: BookingsProps) {
 
   const counts = useMemo(() => {
     const c: Record<string, number> = { all: bookings.length }
-    for (const [k] of CHIPS) c[k] = bookings.filter((b) => chipMatch(k, b.status)).length
+    for (const [k] of BOOKING_CHIPS) c[k] = bookings.filter((b) => bookingChipMatch(k, b.status)).length
     return c
   }, [bookings])
 
-  const list = useMemo(() => {
-    const s = q.trim().toLowerCase()
-    return bookings
-      .filter((b) => chipMatch(chip, b.status))
-      .filter(
-        (b) =>
-          !s ||
-          [b.code, b.customer?.name, b.departure?.name, ...b.participants.map((p) => p.name)]
-            .join(' ')
-            .toLowerCase()
-            .includes(s),
-      )
-      .sort(
-        (a, b) =>
-          (ORDER[a.status] ?? 9) - (ORDER[b.status] ?? 9) ||
-          (a.departure?.start ?? '').localeCompare(b.departure?.start ?? ''),
-      )
-  }, [bookings, chip, q])
+  const list = useMemo(() => filterBookings(bookings, chip, q), [bookings, chip, q])
+  const sum = useMemo(() => bookingTotals(list), [list])
+  const qs = listQuery(chip, q)
 
   return (
     <>
@@ -300,12 +329,20 @@ export function BookingsClient(props: BookingsProps) {
         <button type="button" aria-pressed={chip === 'all'} onClick={() => setChip('all')}>
           {L('ทั้งหมด', 'All')} <sup className="num">{counts.all}</sup>
         </button>
-        {CHIPS.filter(([k]) => k !== 'expired' || counts.expired > 0).map(([k, st]) => (
+        {BOOKING_CHIPS.filter(([k]) => k !== 'expired' || counts.expired > 0).map(([k, st]) => (
           <button key={k} type="button" aria-pressed={chip === k} onClick={() => setChip(k)}>
             {pair(lang, STATUS_LABEL[st])} <sup className="num">{counts[k]}</sup>
           </button>
         ))}
       </div>
+      <ListSummary
+        L={L}
+        sum={sum}
+        noun={L('การจอง', 'bookings')}
+        unit={L('คน', 'pax')}
+        csv={`${BO}/bookings/export${qs}`}
+        pdf={`${BO}/bookings/print${qs}`}
+      />
       <div className="card p0">
         <div className="rows">
           <div className="row head">
@@ -441,8 +478,9 @@ function Drawer({
   const due = dueOf(b)
   const voided = ['cancelled', 'refunded', 'expired'].includes(b.status)
   const idx = STEPS.findIndex((s) => s[0] === b.status)
-  const pendingPay = b.payments.find((p) => p.status === 'pending') ?? null
-  const shown = b.payments.filter((p) => p.status !== 'pending')
+  // Only a transfer slip waits for staff; a pending card/QR attempt is listed with the payments
+  const pendingPay = b.payments.find((p) => p.status === 'pending' && p.provider === 'slip') ?? null
+  const shown = b.payments.filter((p) => p !== pendingPay)
   const balDue = d ? addDays(d.start, -balanceDays) : null
   const healthIn = b.participants.filter((p) => p.healthOk).length
   const pct = (p: PaymentVM) => (b.total ? Math.round((p.amount / b.total) * 100) : 0)
@@ -564,6 +602,7 @@ function Drawer({
                   {fd(ymd(pendingPay.at), lang)} {shopTime(pendingPay.at)} ·{' '}
                   {pair(lang, PROVIDER_LABEL[pendingPay.provider], pendingPay.provider)}
                 </p>
+                <SlipCheck p={pendingPay} L={L} />
                 <ul className="checks">
                   <li
                     className={
@@ -678,7 +717,7 @@ function Drawer({
                       : pair(lang, KIND_LABEL[p.kind], p.kind)}
                   </b>
                   <span>
-                    {fd(ymd(p.at), lang)} · {pair(lang, PROVIDER_LABEL[p.provider], p.provider)}
+                    {fd(ymd(p.at), lang)} · <PayVia p={p} lang={lang} />
                     {p.ref ? ` · ${p.ref}` : ''}
                   </span>
                 </span>
@@ -691,6 +730,8 @@ function Drawer({
                     <span className="pill st-paid">{L('ยืนยันแล้ว', 'Confirmed')}</span>
                   ) : p.status === 'rejected' ? (
                     <span className="pill st-cancelled">{L('ปฏิเสธแล้ว', 'Rejected')}</span>
+                  ) : p.status === 'pending' ? (
+                    <span className="pill st-review">{L('รอผลชำระ', 'Awaiting payment')}</span>
                   ) : (
                     <span className="pill st-hold">{L('ไม่สำเร็จ', 'Failed')}</span>
                   )}
@@ -1070,7 +1111,8 @@ function CancelModal({
 
 function SlipLightbox({ b, L, onClose }: { b: BookingVM; L: Tr; onClose: () => void }) {
   const p =
-    b.payments.find((x) => x.status === 'pending' && x.slip) ?? b.payments.find((x) => x.slip)
+    b.payments.find((x) => x.status === 'pending' && x.provider === 'slip' && x.slip) ??
+    b.payments.find((x) => x.slip)
   return (
     <div className="lbox" onClick={onClose}>
       <button className="ibtn" type="button" onClick={onClose} aria-label={L('ปิด', 'Close')}>

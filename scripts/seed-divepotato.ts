@@ -588,6 +588,7 @@ async function seedGlobals(payload: Payload, photos: Map<string, number>) {
         email: 'hello@divepotato.local',
         hours: 'ทุกวัน 08:00-19:00',
         address: 'ที่อยู่ร้าน (ตัวอย่าง)',
+        mapLocation: '13.83776148801082, 100.60349854232841',
       },
       hero: {
         title: 'ดำน้ำกับ Dive Potato',
@@ -728,7 +729,11 @@ async function seedGlobals(payload: Payload, photos: Map<string, number>) {
     data: {
       depositPct: 30,
       holdMinutes: 15,
-      promptPayId: '0000000000 (sample)',
+      paymentProvider: 'demo',
+      payMethods: ['card', 'promptpay', 'transfer'],
+      bankName: 'ธนาคารตัวอย่าง (sample)',
+      accountName: 'Dive Potato Scuba Diving (sample)',
+      accountNumber: '000-0-00000-0',
       notifyEmail: 'bookings@divepotato.local',
       cancellationPolicy: richText(
         'ยกเลิกก่อนเดินทาง 30 วันขึ้นไป คืนมัดจำเต็มจำนวน',

@@ -170,6 +170,20 @@ export function SiteInfoForm({
                 onChange={(e) => setCLoc('address', e.target.value)}
               />
             </label>
+            <label className="field">
+              <span>{L('พิกัดแผนที่ (ไทย/อังกฤษใช้ร่วมกัน)', 'Map location (shared TH/EN)')}</span>
+              <input
+                className="inp num"
+                placeholder="13.8377, 100.6035"
+                {...plain('mapLocation')}
+              />
+              <small className="hint">
+                {L(
+                  'ใน Google Maps คลิกขวาที่ร้าน แล้วกดตัวเลขพิกัดบนสุดเพื่อคัดลอกมาวาง',
+                  'In Google Maps, right-click the shop and click the numbers at the top to copy them',
+                )}
+              </small>
+            </label>
           </Section>
 
           <Section

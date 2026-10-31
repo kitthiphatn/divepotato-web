@@ -13,7 +13,10 @@ import { actionUser, errorMessage, isSession, type ActionResult, type Session } 
 
 const STAFF = ['admin', 'staff'] as const
 type Provider = Payment['provider']
+// What staff can record by hand; online payments (Omise, Stripe, demo) record themselves
 const PROVIDERS: Provider[] = ['cash', 'transfer', 'slip', 'omise']
+// A slip waiting for review (pending card/QR attempts are not slips)
+const isPendingSlip = (p: Payment) => p.status === 'pending' && p.provider === 'slip'
 
 async function load(s: Session, id: number) {
   return (await s.payload.findByID({
@@ -75,7 +78,7 @@ export async function approveSlipAction(bookingId: number): Promise<ActionResult
         message: s.L('การจองนี้ไม่มีสลิปรอตรวจ', 'This booking has no slip to review'),
       }
     const payments = await paymentsOf(s, b.id)
-    const pending = payments.find((p) => p.status === 'pending')
+    const pending = payments.find(isPendingSlip)
     if (!pending)
       return { ok: false, message: s.L('ไม่พบสลิปที่รอตรวจ', 'No pending slip was found') }
     await s.payload.update({
@@ -107,7 +110,7 @@ export async function rejectSlipAction(bookingId: number, reason: string): Promi
         message: s.L('การจองนี้ไม่มีสลิปรอตรวจ', 'This booking has no slip to review'),
       }
     for (const p of await paymentsOf(s, b.id))
-      if (p.status === 'pending')
+      if (isPendingSlip(p))
         await s.payload.update({
           collection: 'payments',
           id: p.id,
@@ -155,6 +158,7 @@ export async function recordPaymentAction(input: {
         booking: b.id,
         kind: input.kind,
         provider,
+        method: provider === 'cash' ? 'cash' : provider === 'omise' ? undefined : 'transfer',
         amount,
         status: 'succeeded',
         ref: input.ref?.trim() || undefined,

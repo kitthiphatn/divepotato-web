@@ -1,6 +1,6 @@
 import type { Metadata } from 'next'
 
-import { BO } from '@/backoffice/nav'
+import { shopTabs } from '@/backoffice/shop'
 import { requireUser } from '@/backoffice/server'
 import { SubTabs } from '@/backoffice/ui/fields'
 import { RentalsManager, type RentalRow } from '@/backoffice/ui/Rentals'
@@ -42,17 +42,7 @@ export default async function RentalsPage() {
           </p>
         </div>
       </div>
-      <SubTabs
-        items={[
-          { href: `${BO}/shop`, label: L('สินค้า', 'Products'), icon: 'bag', on: false },
-          {
-            href: `${BO}/shop/rentals`,
-            label: L('อุปกรณ์ให้เช่า', 'Rental gear'),
-            icon: 'suit',
-            on: true,
-          },
-        ]}
-      />
+      <SubTabs items={shopTabs(L, s.role, 'rentals')} />
       <RentalsManager lang={s.lang} items={items} canDelete={s.role === 'admin'} />
     </>
   )

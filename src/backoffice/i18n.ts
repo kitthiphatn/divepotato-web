@@ -45,11 +45,44 @@ export const STEPS: readonly (readonly [string, string, string])[] = [
 ]
 export const VOID_STATUSES = ['cancelled', 'refunded', 'expired']
 
+// Shop order statuses (Orders `status`) and their pill colours
+export const ORDER_STATUS_LABEL: Record<string, Pair> = {
+  pending_payment: ['รอชำระเงิน', 'Awaiting payment'],
+  pending_review: ['รอตรวจสลิป', 'Slip to review'],
+  paid: ['ชำระแล้ว รอแพ็ก', 'Paid, to pack'],
+  packed: ['แพ็กแล้ว', 'Packed'],
+  shipped: ['จัดส่งแล้ว', 'Shipped'],
+  picked_up: ['รับที่ร้านแล้ว', 'Picked up'],
+  cancelled: ['ยกเลิกแล้ว', 'Cancelled'],
+  refunded: ['คืนเงินแล้ว', 'Refunded'],
+  expired: ['หมดเวลา', 'Expired'],
+}
+export const ORDER_STATUS_CLASS: Record<string, string> = {
+  pending_payment: 'st-hold',
+  pending_review: 'st-review',
+  paid: 'st-deposit',
+  packed: 'st-deposit',
+  shipped: 'st-paid',
+  picked_up: 'st-paid',
+  cancelled: 'st-cancelled',
+  refunded: 'st-cancelled',
+  expired: 'st-hold',
+}
+
 export const PROVIDER_LABEL: Record<string, Pair> = {
   omise: ['Omise', 'Omise'],
+  stripe: ['Stripe', 'Stripe'],
+  demo: ['เดโม', 'Demo'],
   slip: ['สลิปโอนเงิน', 'Transfer slip'],
   cash: ['เงินสดที่ร้าน', 'Cash at shop'],
   transfer: ['โอนผ่านธนาคาร', 'Bank transfer'],
+}
+// How the customer paid (Payments `method`)
+export const METHOD_LABEL: Record<string, Pair> = {
+  card: ['บัตร', 'Card'],
+  promptpay: ['QR พร้อมเพย์', 'PromptPay QR'],
+  transfer: ['โอนเงิน', 'Transfer'],
+  cash: ['เงินสด', 'Cash'],
 }
 // Payment record statuses (Payments `status`) and their pill colours
 export const PAY_STATUS_LABEL: Record<string, Pair> = {
@@ -67,6 +100,7 @@ export const PAY_STATUS_CLASS: Record<string, string> = {
 export const KIND_LABEL: Record<string, Pair> = {
   deposit: ['มัดจำ', 'Deposit'],
   balance: ['ยอดคงเหลือ', 'Balance'],
+  full: ['ชำระเต็มจำนวน', 'Full payment'],
   refund: ['คืนเงิน', 'Refund'],
 }
 export const SOURCE_LABEL: Record<string, Pair> = {

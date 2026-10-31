@@ -5,6 +5,8 @@
 // English; array rows keep their ids so both languages land on the same rows.
 import { revalidatePath } from 'next/cache'
 
+import { latLng } from '@/site/format'
+
 import { blocksToLexical, type Block } from '../blocks'
 import { BO } from '../nav'
 import { SERVICE_ICON_KEYS, type ServiceIcon } from '../website'
@@ -38,6 +40,7 @@ export type SiteSettingsInput = {
     youtubeUrl: string
     hours: Pair
     address: Pair
+    mapLocation: string
   }
   hero: { title: Pair; subtitle: Pair; background: number | null }
   footerNote: Pair
@@ -74,6 +77,15 @@ export async function saveSiteSettingsAction(v: SiteSettingsInput): Promise<Acti
         message: L('ลิงก์โซเชียลต้องขึ้นต้นด้วย https://', 'Social links must start with https://'),
       }
   }
+  const map = v.contact.mapLocation.trim()
+  if (map && !latLng(map))
+    return {
+      ok: false,
+      message: L(
+        'พิกัดแผนที่ต้องเป็น ละติจูด, ลองจิจูด เช่น 13.8377, 100.6035',
+        'Map location must be latitude, longitude, e.g. 13.8377, 100.6035',
+      ),
+    }
   const c = v.contact
   try {
     await s.payload.updateGlobal({
@@ -96,6 +108,7 @@ export async function saveSiteSettingsAction(v: SiteSettingsInput): Promise<Acti
           youtubeUrl: opt(c.youtubeUrl),
           hours: opt(c.hours.th),
           address: opt(c.address.th),
+          mapLocation: map || null,
         },
         hero: {
           title: opt(v.hero.title.th),

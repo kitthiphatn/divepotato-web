@@ -62,6 +62,17 @@ export const SiteSettings: GlobalConfig = {
           type: 'textarea',
           localized: true,
         },
+        {
+          name: 'mapLocation',
+          label: { th: 'พิกัดแผนที่', en: 'Map location' },
+          type: 'text',
+          admin: {
+            description: {
+              th: 'ละติจูด, ลองจิจูด จาก Google Maps เช่น 13.8377, 100.6035',
+              en: 'Latitude, longitude from Google Maps, e.g. 13.8377, 100.6035',
+            },
+          },
+        },
       ],
     },
     {

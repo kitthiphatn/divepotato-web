@@ -162,6 +162,36 @@ export default async function TodayPage() {
       })
     }
   }
+  if (staff) {
+    // Shop orders that need a person: slips to check, paid orders to pack and hand over
+    const orders = await s.payload.find({
+      collection: 'orders',
+      where: { status: { in: ['pending_review', 'paid', 'packed'] } },
+      sort: 'createdAt',
+      pagination: false,
+      depth: 1,
+      ...s.as,
+    })
+    for (const o of orders.docs) {
+      const who = typeof o.customer === 'object' && o.customer ? o.customer.name : ''
+      const n = (o.items ?? []).reduce((sum, it) => sum + (it.qty ?? 0), 0)
+      const ship = o.delivery === 'ship'
+      todos.push({
+        key: `so${o.id}`,
+        icon: o.status === 'pending_review' ? 'slip' : 'bag',
+        title:
+          o.status === 'pending_review'
+            ? L(`ตรวจสลิปคำสั่งซื้อ ${o.code} · ${who}`, `Review order slip ${o.code} · ${who}`)
+            : o.status === 'paid'
+              ? L(`คำสั่งซื้อใหม่ รอแพ็ก ${o.code} · ${who}`, `New order to pack ${o.code} · ${who}`)
+              : ship
+                ? L(`แพ็กแล้ว รอส่งไปรษณีย์ ${o.code}`, `Packed, to post ${o.code}`)
+                : L(`แพ็กแล้ว รอลูกค้ามารับ ${o.code}`, `Packed, waiting for pickup ${o.code}`),
+        sub: `${L(`${n} ชิ้น`, `${n} pcs`)} · ${money(o.total ?? 0)} · ${ship ? L('ส่งไปรษณีย์', 'Post') : L('รับที่ร้าน', 'Pickup')}`,
+        action: { label: L('เปิด', 'Open'), href: `${BO}/shop/orders?open=${o.id}` },
+      })
+    }
+  }
   if (role === 'admin') {
     const variants = await s.payload.find({
       collection: 'product-variants',

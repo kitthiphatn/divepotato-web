@@ -7,6 +7,7 @@ import { useState } from 'react'
 import { fd, money, shopTime, ymd } from '../format'
 import {
   KIND_LABEL,
+  METHOD_LABEL,
   pair,
   PAY_STATUS_CLASS,
   PAY_STATUS_LABEL,
@@ -15,16 +16,18 @@ import {
   type Lang,
 } from '../i18n'
 import { Icon } from '../icons'
-import { BO } from '../nav'
 import { Pager } from './Pager'
 
 export type PaymentRow = {
   id: number
-  bookingId: number | null
+  // Booking or shop order the payment belongs to
   code: string
+  href: string | null
   customer: string
   kind: string
   provider: string
+  method: string
+  slipCheck: string
   amount: number
   status: string
   ref: string
@@ -35,7 +38,7 @@ export type PaymentRow = {
 }
 
 // Payments list: status chips, provider filter, slip thumbnails (tap for the full slip) and a
-// link to the booking. Filters and paging live in the URL so the list can be shared.
+// link to the booking or shop order. Filters and paging live in the URL so the list can be shared.
 export function PaymentsList({
   lang,
   rows,
@@ -117,7 +120,7 @@ export function PaymentsList({
         <div className="rows">
           <div className="row payrow head">
             <span>{L('สลิป', 'Slip')}</span>
-            <span>{L('การจอง', 'Booking')}</span>
+            <span>{L('การจอง / คำสั่งซื้อ', 'Booking / order')}</span>
             <span>{L('ประเภท / ช่องทาง', 'Kind / provider')}</span>
             <span>{L('จำนวนเงิน', 'Amount')}</span>
             <span>{L('สถานะ', 'Status')}</span>
@@ -141,7 +144,17 @@ export function PaymentsList({
                   </button>
                 ) : (
                   <span className="noimg sm" aria-hidden="true">
-                    <Icon name={p.provider === 'cash' ? 'wallet' : 'slip'} />
+                    <Icon
+                      name={
+                        p.provider === 'cash'
+                          ? 'wallet'
+                          : p.method === 'promptpay'
+                            ? 'qr'
+                            : p.method === 'card'
+                              ? 'card'
+                              : 'slip'
+                      }
+                    />
                   </span>
                 )}
               </span>
@@ -149,16 +162,26 @@ export function PaymentsList({
                 <span style={{ minWidth: 0 }}>
                   <b>{p.customer || L('ไม่ทราบชื่อ', 'Unknown')}</b>
                   <small className="num">
-                    {p.code || `#${p.bookingId ?? '-'}`} · {fd(ymd(p.at), lang)} {shopTime(p.at)}
+                    {p.code || '-'} · {fd(ymd(p.at), lang)} {shopTime(p.at)}
                   </small>
                 </span>
               </span>
               <span className="c2">
                 <b>{pair(lang, KIND_LABEL[p.kind], p.kind)}</b>
                 <small>
+                  {p.provider === 'demo' && <span className="pill nodot demo">DEMO</span>}{' '}
                   {pair(lang, PROVIDER_LABEL[p.provider], p.provider)}
+                  {p.method && METHOD_LABEL[p.method] && p.provider !== 'slip' && p.provider !== 'cash'
+                    ? ` · ${pair(lang, METHOD_LABEL[p.method])}`
+                    : ''}
                   {p.ref ? ` · ${p.ref}` : ''}
                   {p.reviewedBy ? ` · ${L('ตรวจโดย', 'by')} ${p.reviewedBy}` : ''}
+                  {p.slipCheck === 'duplicate' && (
+                    <span className="pill nodot st-cancelled">{L('สลิปซ้ำ', 'Duplicate slip')}</span>
+                  )}
+                  {p.slipCheck === 'no_qr' && (
+                    <span className="pill nodot st-review">{L('ไม่พบ QR', 'No QR')}</span>
+                  )}
                 </small>
               </span>
               <span className="amt">
@@ -173,13 +196,13 @@ export function PaymentsList({
                 </span>
               </span>
               <span className="go">
-                {p.bookingId && (
+                {p.href && (
                   <Link
                     className="btn t sm"
-                    href={`${BO}/bookings?open=${p.bookingId}`}
-                    aria-label={L(`เปิดการจอง ${p.code}`, `Open booking ${p.code}`)}
+                    href={p.href}
+                    aria-label={L(`เปิด ${p.code}`, `Open ${p.code}`)}
                   >
-                    {L('เปิดการจอง', 'Open')}
+                    {L('เปิด', 'Open')}
                     <Icon name="chev" />
                   </Link>
                 )}

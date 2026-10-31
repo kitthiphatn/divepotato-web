@@ -30,8 +30,9 @@ export function proxy(request: NextRequest) {
     return NextResponse.redirect(url)
   }
   if (first === 'admin') return adminInThai(request)
-  // The staff backoffice has its own TH/EN toggle and no language prefix
-  if (first === 'backoffice') return NextResponse.next()
+  // The staff backoffice has its own TH/EN toggle and no language prefix; payment provider
+  // webhooks must reach their route as sent
+  if (first === 'backoffice' || first === 'webhooks') return NextResponse.next()
   if (isLocale(first)) return NextResponse.next()
 
   const saved = request.cookies.get('NEXT_LOCALE')?.value
@@ -59,7 +60,7 @@ function publicUrl(request: NextRequest, pathname: string) {
 }
 
 export const config = {
-  // Skip APIs, Next.js internals, the backoffice and files with an extension; the admin panel only
-  // gets its default language set
-  matcher: ['/admin/:path*', '/admin', '/((?!admin|api|backoffice|_next|.*\\..*).*)'],
+  // Skip APIs, Next.js internals, the backoffice, payment webhooks and files with an extension;
+  // the admin panel only gets its default language set
+  matcher: ['/admin/:path*', '/admin', '/((?!admin|api|backoffice|webhooks|_next|.*\\..*).*)'],
 }

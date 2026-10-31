@@ -2,6 +2,7 @@ import type { CollectionConfig } from 'payload'
 
 import { contentTeam, hiddenFromGuide } from '../access/roles'
 import { GROUPS } from './groups'
+import { contentHooks } from './shared'
 
 export const ProductVariants: CollectionConfig = {
   slug: 'product-variants',
@@ -16,6 +17,8 @@ export const ProductVariants: CollectionConfig = {
     defaultColumns: ['sku', 'product', 'size', 'price', 'stock'],
   },
   access: { read: () => true, create: contentTeam, update: contentTeam, delete: contentTeam },
+  // Sizes, prices and stock show on the public equipment pages
+  hooks: contentHooks,
   fields: [
     {
       name: 'product',

@@ -76,6 +76,7 @@ export interface Config {
     'dive-sites': DiveSite;
     products: Product;
     'product-variants': ProductVariant;
+    orders: Order;
     'rental-items': RentalItem;
     posts: Post;
     faqs: Faq;
@@ -102,6 +103,7 @@ export interface Config {
     'dive-sites': DiveSitesSelect<false> | DiveSitesSelect<true>;
     products: ProductsSelect<false> | ProductsSelect<true>;
     'product-variants': ProductVariantsSelect<false> | ProductVariantsSelect<true>;
+    orders: OrdersSelect<false> | OrdersSelect<true>;
     'rental-items': RentalItemsSelect<false> | RentalItemsSelect<true>;
     posts: PostsSelect<false> | PostsSelect<true>;
     faqs: FaqsSelect<false> | FaqsSelect<true>;
@@ -187,6 +189,7 @@ export interface Booking {
   code?: string | null;
   status: 'hold' | 'pending_review' | 'deposit_paid' | 'paid' | 'cancelled' | 'refunded' | 'completed' | 'expired';
   holdExpiresAt?: string | null;
+  payToken?: string | null;
   source?: ('website' | 'line' | 'phone' | 'walk_in' | 'agent') | null;
   departure: number | Departure;
   customer: number | Customer;
@@ -477,9 +480,11 @@ export interface User {
  */
 export interface Payment {
   id: number;
-  booking: number | Booking;
-  provider: 'omise' | 'slip' | 'cash' | 'transfer';
-  kind: 'deposit' | 'balance' | 'refund';
+  booking?: (number | null) | Booking;
+  order?: (number | null) | Order;
+  provider: 'omise' | 'stripe' | 'demo' | 'slip' | 'cash' | 'transfer';
+  method?: ('card' | 'promptpay' | 'transfer' | 'cash') | null;
+  kind: 'deposit' | 'balance' | 'full' | 'refund';
   amount: number;
   status: 'pending' | 'succeeded' | 'failed' | 'rejected';
   /**
@@ -487,8 +492,86 @@ export interface Payment {
    */
   ref?: string | null;
   slip?: (number | null) | Media;
+  slipRef?: string | null;
+  /**
+   * Only checks there is a QR and it was not used before; not the amount or receiver
+   */
+  slipCheck?: ('ok' | 'no_qr' | 'duplicate') | null;
   reviewedBy?: (number | null) | User;
   reviewedAt?: string | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "orders".
+ */
+export interface Order {
+  id: number;
+  /**
+   * Automatic, e.g. DP-ORD-2611-0001
+   */
+  code?: string | null;
+  status:
+    | 'pending_payment'
+    | 'pending_review'
+    | 'paid'
+    | 'packed'
+    | 'shipped'
+    | 'picked_up'
+    | 'cancelled'
+    | 'refunded'
+    | 'expired';
+  holdExpiresAt?: string | null;
+  payToken?: string | null;
+  stockDeducted?: boolean | null;
+  customer: number | Customer;
+  items?:
+    | {
+        variant: number | ProductVariant;
+        title: string;
+        size?: string | null;
+        sku?: string | null;
+        unitPrice: number;
+        qty: number;
+        lineTotal?: number | null;
+        id?: string | null;
+      }[]
+    | null;
+  delivery: 'pickup' | 'ship';
+  trackingNo?: string | null;
+  address?: {
+    line?: string | null;
+    district?: string | null;
+    province?: string | null;
+    postcode?: string | null;
+  };
+  subtotal?: number | null;
+  shippingFee?: number | null;
+  total?: number | null;
+  timeline?:
+    | {
+        at: string;
+        event: string;
+        by?: (number | null) | User;
+        note?: string | null;
+        id?: string | null;
+      }[]
+    | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "product-variants".
+ */
+export interface ProductVariant {
+  id: number;
+  product: number | Product;
+  sku: string;
+  size?: string | null;
+  price: number;
+  stock: number;
   updatedAt: string;
   createdAt: string;
 }
@@ -512,20 +595,6 @@ export interface Product {
     hasNextPage?: boolean;
     totalDocs?: number;
   };
-  updatedAt: string;
-  createdAt: string;
-}
-/**
- * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "product-variants".
- */
-export interface ProductVariant {
-  id: number;
-  product: number | Product;
-  sku: string;
-  size?: string | null;
-  price: number;
-  stock: number;
   updatedAt: string;
   createdAt: string;
 }
@@ -675,6 +744,10 @@ export interface PayloadLockedDocument {
         value: number | ProductVariant;
       } | null)
     | ({
+        relationTo: 'orders';
+        value: number | Order;
+      } | null)
+    | ({
         relationTo: 'rental-items';
         value: number | RentalItem;
       } | null)
@@ -748,6 +821,7 @@ export interface BookingsSelect<T extends boolean = true> {
   code?: T;
   status?: T;
   holdExpiresAt?: T;
+  payToken?: T;
   source?: T;
   departure?: T;
   customer?: T;
@@ -819,12 +893,16 @@ export interface CustomersSelect<T extends boolean = true> {
  */
 export interface PaymentsSelect<T extends boolean = true> {
   booking?: T;
+  order?: T;
   provider?: T;
+  method?: T;
   kind?: T;
   amount?: T;
   status?: T;
   ref?: T;
   slip?: T;
+  slipRef?: T;
+  slipCheck?: T;
   reviewedBy?: T;
   reviewedAt?: T;
   updatedAt?: T;
@@ -949,6 +1027,54 @@ export interface ProductVariantsSelect<T extends boolean = true> {
   size?: T;
   price?: T;
   stock?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "orders_select".
+ */
+export interface OrdersSelect<T extends boolean = true> {
+  code?: T;
+  status?: T;
+  holdExpiresAt?: T;
+  payToken?: T;
+  stockDeducted?: T;
+  customer?: T;
+  items?:
+    | T
+    | {
+        variant?: T;
+        title?: T;
+        size?: T;
+        sku?: T;
+        unitPrice?: T;
+        qty?: T;
+        lineTotal?: T;
+        id?: T;
+      };
+  delivery?: T;
+  trackingNo?: T;
+  address?:
+    | T
+    | {
+        line?: T;
+        district?: T;
+        province?: T;
+        postcode?: T;
+      };
+  subtotal?: T;
+  shippingFee?: T;
+  total?: T;
+  timeline?:
+    | T
+    | {
+        at?: T;
+        event?: T;
+        by?: T;
+        note?: T;
+        id?: T;
+      };
   updatedAt?: T;
   createdAt?: T;
 }
@@ -1120,12 +1246,18 @@ export interface BookingSetting {
     };
     [k: string]: unknown;
   } | null;
-  omisePublicKey?: string | null;
+  paymentProvider: 'demo' | 'omise' | 'stripe';
+  payMethods?: ('card' | 'promptpay' | 'transfer')[] | null;
+  bankName?: string | null;
+  accountName?: string | null;
+  accountNumber?: string | null;
+  pickupEnabled?: boolean | null;
+  shippingEnabled?: boolean | null;
+  shippingFee: number;
   /**
-   * Used from phase 2
+   * Empty or 0 = no free shipping
    */
-  omiseSecretKey?: string | null;
-  promptPayId?: string | null;
+  freeShippingMin?: number | null;
   lineChannelToken?: string | null;
   lineTarget?: string | null;
   notifyEmail?: string | null;
@@ -1156,6 +1288,10 @@ export interface SiteSetting {
     youtubeUrl?: string | null;
     hours?: string | null;
     address?: string | null;
+    /**
+     * Latitude, longitude from Google Maps, e.g. 13.8377, 100.6035
+     */
+    mapLocation?: string | null;
   };
   hero?: {
     title?: string | null;
@@ -1320,9 +1456,15 @@ export interface BookingSettingsSelect<T extends boolean = true> {
   depositPct?: T;
   holdMinutes?: T;
   cancellationPolicy?: T;
-  omisePublicKey?: T;
-  omiseSecretKey?: T;
-  promptPayId?: T;
+  paymentProvider?: T;
+  payMethods?: T;
+  bankName?: T;
+  accountName?: T;
+  accountNumber?: T;
+  pickupEnabled?: T;
+  shippingEnabled?: T;
+  shippingFee?: T;
+  freeShippingMin?: T;
   lineChannelToken?: T;
   lineTarget?: T;
   notifyEmail?: T;
@@ -1352,6 +1494,7 @@ export interface SiteSettingsSelect<T extends boolean = true> {
         youtubeUrl?: T;
         hours?: T;
         address?: T;
+        mapLocation?: T;
       };
   hero?:
     | T

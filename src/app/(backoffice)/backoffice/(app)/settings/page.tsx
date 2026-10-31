@@ -1,6 +1,8 @@
 import type { Metadata } from 'next'
 
 import { BALANCE_DAYS } from '@/backoffice/data'
+import { isProvider, keyStatus, webhookUrls } from '@/lib/payments/config'
+import { PAY_METHODS } from '@/lib/payments/types'
 import { lexicalToText } from '@/backoffice/richtext'
 import { requireUser } from '@/backoffice/server'
 import { SettingsForm, type StaffRow } from '@/backoffice/ui/Settings'
@@ -36,8 +38,8 @@ export default async function SettingsPage() {
           <h1>{L('ตั้งค่า', 'Settings')}</h1>
           <p className="lede">
             {L(
-              'กติกาการจอง การรับเงิน การแจ้งเตือน และทีมงาน',
-              'Booking rules, payments, notifications and team',
+              'กติกาการจอง การรับเงิน การจัดส่งสินค้า การแจ้งเตือน และทีมงาน',
+              'Booking rules, payments, shop delivery, notifications and team',
             )}
           </p>
         </div>
@@ -46,6 +48,8 @@ export default async function SettingsPage() {
         lang={s.lang}
         balanceDays={BALANCE_DAYS}
         staff={staff}
+        payKeys={keyStatus()}
+        webhooks={webhookUrls()}
         value={{
           depositPct: th.depositPct ?? 30,
           holdMinutes: th.holdMinutes ?? 15,
@@ -54,9 +58,15 @@ export default async function SettingsPage() {
             en: lexicalToText(en.cancellationPolicy),
           },
           cancellationDirty: { th: false, en: false },
-          omisePublicKey: th.omisePublicKey ?? '',
-          omiseSecretKey: th.omiseSecretKey ?? '',
-          promptPayId: th.promptPayId ?? '',
+          paymentProvider: isProvider(th.paymentProvider) ? th.paymentProvider : 'demo',
+          payMethods: th.payMethods?.length ? th.payMethods : [...PAY_METHODS],
+          bankName: th.bankName ?? '',
+          accountName: th.accountName ?? '',
+          accountNumber: th.accountNumber ?? '',
+          pickupEnabled: th.pickupEnabled ?? true,
+          shippingEnabled: th.shippingEnabled ?? true,
+          shippingFee: th.shippingFee ?? 100,
+          freeShippingMin: th.freeShippingMin ?? 0,
           lineChannelToken: th.lineChannelToken ?? '',
           lineTarget: th.lineTarget ?? '',
           notifyEmail: th.notifyEmail ?? '',

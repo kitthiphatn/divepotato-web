@@ -1488,6 +1488,34 @@ select.inp {
 .money b.due {
   color: var(--red);
 }
+/* shop order panel: item lines and the tracking number field */
+.oitems {
+  margin-bottom: 12px;
+}
+.oitems li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--ln);
+}
+.oitems li > span {
+  display: grid;
+  min-width: 0;
+}
+.oitems small {
+  font-size: 13px;
+}
+.trk {
+  display: flex;
+  align-items: flex-end;
+  gap: 10px;
+}
+.trk .field {
+  flex: 1;
+  margin-bottom: 0;
+}
 .pay {
   display: flex;
   align-items: center;
@@ -2258,6 +2286,48 @@ select.inp {
 .hx {
   color: #b54708;
   font-weight: 600;
+}
+/* list report (Export PDF of bookings and orders) */
+.paper.lrep {
+  font-size: 12px;
+  max-width: 1280px;
+}
+.paper.lrep .mh {
+  align-items: center;
+}
+.paper.lrep td {
+  padding: 7px 6px;
+}
+.paper.lrep small {
+  color: #555;
+  font-size: 11px;
+}
+.paper.lrep .nw {
+  white-space: nowrap;
+}
+.paper th.r,
+.paper td.r {
+  text-align: right;
+  white-space: nowrap;
+}
+.paper .ptot td {
+  border-top: 1.5px solid #111;
+  border-bottom: 0;
+  font-weight: 700;
+  padding-top: 10px;
+}
+/* totals of the current filter above the bookings and orders lists */
+.lsum {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  align-items: center;
+  margin-bottom: 12px;
+}
+.lsum .exp {
+  display: flex;
+  gap: 8px;
+  margin-left: auto;
 }
 
 /* ===== trips ===== */
@@ -4076,6 +4146,13 @@ select.inp {
   .paper tr {
     break-inside: avoid;
   }
+  /* repeat the column titles on every page; the totals row prints once, at the end */
+  .paper thead {
+    display: table-header-group;
+  }
+  .paper tfoot {
+    display: table-row-group;
+  }
 }
 
 /* ===== link segments and image fallbacks ===== */
@@ -5451,4 +5528,59 @@ p.pager {
   .row.alog .chg {
     grid-column: 1 / span 2;
   }
+}
+
+/* ---------- payment settings ---------- */
+label.cc {
+  cursor: pointer;
+}
+label.cc:has(input:focus-visible) {
+  outline: 2px solid var(--y);
+  outline-offset: 2px;
+}
+.cc .keys {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: auto;
+}
+.cc .keys .pill {
+  font-size: 11px;
+}
+.fsec .lbl2 {
+  display: block;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--mu);
+  margin-top: 22px;
+}
+.fsec .hint.warn {
+  color: var(--amb);
+  margin-top: 8px;
+}
+.pill.demo {
+  background: var(--ysoft);
+  color: var(--ytx);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+}
+.slipchk {
+  display: grid;
+  gap: 4px;
+  justify-items: start;
+  margin: 10px 0 4px;
+}
+.slipchk .pill {
+  white-space: normal;
+}
+.slipchk .pill a {
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  margin-left: 4px;
+}
+.slipchk small {
+  color: var(--mu);
+  font-size: 12px;
+  overflow-wrap: anywhere;
 }
