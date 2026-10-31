@@ -18,6 +18,15 @@ export default async function BackofficeAppLayout({ children }: { children: Reac
     })
     counts.bookings = review.totalDocs
   }
+  if (role === 'admin' || role === 'staff') {
+    // New shop orders waiting for staff: a slip to check or paid and not packed yet
+    const orders = await payload.count({
+      collection: 'orders',
+      where: { status: { in: ['pending_review', 'paid'] } },
+      ...as,
+    })
+    counts.shop = orders.totalDocs
+  }
   return (
     <Shell
       nav={nav}

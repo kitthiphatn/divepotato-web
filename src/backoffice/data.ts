@@ -8,6 +8,7 @@ import type {
   Customer,
   Departure,
   Media,
+  Order,
   Payment,
   RentalItem,
   Trip,
@@ -16,6 +17,7 @@ import type {
 
 import { ymd } from './format'
 import { CERT_RANK } from './i18n'
+import { BO } from './nav'
 import type { Session } from './server'
 
 type Rel<T> = number | T | null | undefined
@@ -96,10 +98,10 @@ export type PaymentVM = {
   status: string
   ref: string
   slip: { url: string; alt: string } | null
-  // QR read from a transfer slip, and for a duplicate the booking that used it first
+  // QR read from a transfer slip, and for a duplicate the booking or order that used it first
   slipRef: string
   slipCheck: string
-  dupOf: { id: number; code: string } | null
+  dupOf: { code: string; href: string } | null
   at: string
   reviewedBy: string
 }
@@ -169,8 +171,31 @@ async function firstUseOf(s: Session, p: Payment) {
     depth: 1,
     ...s.as,
   })
-  const b = obj<Booking>(res.docs[0]?.booking as Rel<Booking>)
-  return b ? { id: b.id, code: b.code ?? `#${b.id}` } : null
+  const first = res.docs[0]
+  const o = obj<Order>(first?.order as Rel<Order>)
+  if (o) return { code: o.code ?? `#${o.id}`, href: `${BO}/shop/orders?open=${o.id}` }
+  const b = obj<Booking>(first?.booking as Rel<Booking>)
+  return b ? { code: b.code ?? `#${b.id}`, href: `${BO}/bookings?open=${b.id}` } : null
+}
+
+// One payment record as the booking and order panels show it
+async function paymentVM(s: Session, p: Payment): Promise<PaymentVM> {
+  const slip = obj<Media>(p.slip)
+  return {
+    id: p.id,
+    kind: p.kind,
+    provider: p.provider,
+    method: p.method ?? '',
+    amount: p.amount ?? 0,
+    status: p.status,
+    ref: p.ref ?? '',
+    slip: slip?.url ? { url: slip.url, alt: slip.alt ?? '' } : null,
+    slipRef: p.slipRef ?? '',
+    slipCheck: p.slipCheck ?? '',
+    dupOf: p.slipCheck === 'duplicate' && p.slipRef ? await firstUseOf(s, p) : null,
+    at: p.createdAt,
+    reviewedBy: userName(p.reviewedBy),
+  }
 }
 
 // Bookings with their departure, customer and payments
@@ -205,23 +230,8 @@ export async function findBookings(s: Session, where?: Where, limit = 1000): Pro
     for (const p of pres.docs as Payment[]) {
       const bid = relId(p.booking as Rel<{ id: number }>)
       if (!bid) continue
-      const slip = obj<Media>(p.slip)
       const list = payments.get(bid) ?? []
-      list.push({
-        id: p.id,
-        kind: p.kind,
-        provider: p.provider,
-        method: p.method ?? '',
-        amount: p.amount ?? 0,
-        status: p.status,
-        ref: p.ref ?? '',
-        slip: slip?.url ? { url: slip.url, alt: slip.alt ?? '' } : null,
-        slipRef: p.slipRef ?? '',
-        slipCheck: p.slipCheck ?? '',
-        dupOf: p.slipCheck === 'duplicate' && p.slipRef ? await firstUseOf(s, p) : null,
-        at: p.createdAt,
-        reviewedBy: userName(p.reviewedBy),
-      })
+      list.push(await paymentVM(s, p))
       payments.set(bid, list)
     }
   }
@@ -347,4 +357,85 @@ export async function mediaLibrary(s: Session): Promise<MediaItem[]> {
   return media.docs
     .filter((m) => m.url && (m.mimeType ?? '').startsWith('image/'))
     .map((m) => ({ id: m.id, url: mediaUrl(m)!, alt: m.alt ?? '', filename: m.filename ?? '' }))
+}
+
+export type OrderVM = {
+  id: number
+  code: string
+  status: string
+  createdAt: string
+  holdExpiresAt: string | null
+  customer: { id: number; name: string; phone: string; email: string } | null
+  items: { title: string; size: string; sku: string; unitPrice: number; qty: number; lineTotal: number }[]
+  delivery: 'pickup' | 'ship'
+  address: string
+  trackingNo: string
+  subtotal: number
+  shippingFee: number
+  total: number
+  stockDeducted: boolean
+  payments: PaymentVM[]
+  timeline: { at: string; event: string; note: string; by: string }[]
+}
+
+// Shop orders with their customer and payments, newest first
+export async function findOrders(s: Session, where?: Where, limit = 500): Promise<OrderVM[]> {
+  const res = await s.payload.find({
+    collection: 'orders',
+    where,
+    sort: '-createdAt',
+    limit,
+    depth: 1,
+    ...s.as,
+  })
+  const docs = res.docs as Order[]
+  if (!docs.length) return []
+  const pres = await s.payload.find({
+    collection: 'payments',
+    where: { order: { in: docs.map((o) => o.id) } },
+    sort: 'createdAt',
+    pagination: false,
+    depth: 1,
+    ...s.as,
+  })
+  const payments = new Map<number, PaymentVM[]>()
+  for (const p of pres.docs as Payment[]) {
+    const oid = relId(p.order as Rel<{ id: number }>)
+    if (!oid) continue
+    payments.set(oid, [...(payments.get(oid) ?? []), await paymentVM(s, p)])
+  }
+  return docs.map((o) => {
+    const c = obj<Customer>(o.customer)
+    const a = o.address
+    return {
+      id: o.id,
+      code: o.code ?? `#${o.id}`,
+      status: o.status,
+      createdAt: o.createdAt,
+      holdExpiresAt: o.holdExpiresAt ?? null,
+      customer: c ? { id: c.id, name: c.name, phone: c.phone ?? '', email: c.email ?? '' } : null,
+      items: (o.items ?? []).map((it) => ({
+        title: it.title,
+        size: it.size ?? '',
+        sku: it.sku ?? '',
+        unitPrice: it.unitPrice ?? 0,
+        qty: it.qty ?? 0,
+        lineTotal: it.lineTotal ?? 0,
+      })),
+      delivery: o.delivery === 'ship' ? 'ship' : 'pickup',
+      address: a ? [a.line, a.district, a.province, a.postcode].filter(Boolean).join(' ') : '',
+      trackingNo: o.trackingNo ?? '',
+      subtotal: o.subtotal ?? 0,
+      shippingFee: o.shippingFee ?? 0,
+      total: o.total ?? 0,
+      stockDeducted: Boolean(o.stockDeducted),
+      payments: payments.get(o.id) ?? [],
+      timeline: (o.timeline ?? []).map((t) => ({
+        at: t.at,
+        event: t.event,
+        note: t.note ?? '',
+        by: userName(t.by),
+      })),
+    }
+  })
 }

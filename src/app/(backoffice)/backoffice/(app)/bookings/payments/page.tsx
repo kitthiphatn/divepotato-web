@@ -5,7 +5,7 @@ import { BO } from '@/backoffice/nav'
 import { requireUser } from '@/backoffice/server'
 import { SubTabs } from '@/backoffice/ui/fields'
 import { PaymentsList, type PaymentRow } from '@/backoffice/ui/Payments'
-import type { Booking, Customer, Media, User } from '@/payload-types'
+import type { Booking, Customer, Media, Order, User } from '@/payload-types'
 
 export const metadata: Metadata = { title: 'การชำระเงิน · Payments' }
 
@@ -60,14 +60,16 @@ export default async function PaymentsPage({
   ])
 
   const rows: PaymentRow[] = res.docs.map((p) => {
-    const b = typeof p.booking === 'object' ? (p.booking as Booking) : null
-    const c = b && typeof b.customer === 'object' ? (b.customer as Customer) : null
+    const b = p.booking && typeof p.booking === 'object' ? (p.booking as Booking) : null
+    const o = p.order && typeof p.order === 'object' ? (p.order as Order) : null
+    const owner = b ?? o
+    const c = owner && typeof owner.customer === 'object' ? (owner.customer as Customer) : null
     const slip = typeof p.slip === 'object' ? (p.slip as Media | null) : null
     const by = typeof p.reviewedBy === 'object' ? (p.reviewedBy as User | null) : null
     return {
       id: p.id,
-      bookingId: b?.id ?? (typeof p.booking === 'number' ? p.booking : null),
-      code: b?.code ?? '',
+      code: owner?.code ?? '',
+      href: b ? `${BO}/bookings?open=${b.id}` : o ? `${BO}/shop/orders?open=${o.id}` : null,
       customer: c?.name ?? '',
       kind: p.kind,
       provider: p.provider,
@@ -90,8 +92,8 @@ export default async function PaymentsPage({
           <h1>{L('การจอง', 'Bookings')}</h1>
           <p className="lede">
             {L(
-              'รายการรับเงินและคืนเงินทั้งหมด ดูสลิปและเปิดการจองได้',
-              'Every payment and refund; view the slip or open the booking',
+              'รายการรับเงินและคืนเงินทั้งหมด ทั้งการจองและคำสั่งซื้อ ดูสลิปและเปิดรายการได้',
+              'Every payment and refund for bookings and shop orders; view the slip or open it',
             )}
           </p>
         </div>

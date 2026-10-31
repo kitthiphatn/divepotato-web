@@ -38,8 +38,8 @@ export default async function SettingsPage() {
           <h1>{L('ตั้งค่า', 'Settings')}</h1>
           <p className="lede">
             {L(
-              'กติกาการจอง การรับเงิน การแจ้งเตือน และทีมงาน',
-              'Booking rules, payments, notifications and team',
+              'กติกาการจอง การรับเงิน การจัดส่งสินค้า การแจ้งเตือน และทีมงาน',
+              'Booking rules, payments, shop delivery, notifications and team',
             )}
           </p>
         </div>
@@ -63,6 +63,10 @@ export default async function SettingsPage() {
           bankName: th.bankName ?? '',
           accountName: th.accountName ?? '',
           accountNumber: th.accountNumber ?? '',
+          pickupEnabled: th.pickupEnabled ?? true,
+          shippingEnabled: th.shippingEnabled ?? true,
+          shippingFee: th.shippingFee ?? 100,
+          freeShippingMin: th.freeShippingMin ?? 0,
           lineChannelToken: th.lineChannelToken ?? '',
           lineTarget: th.lineTarget ?? '',
           notifyEmail: th.notifyEmail ?? '',

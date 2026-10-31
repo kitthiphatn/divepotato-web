@@ -1,7 +1,7 @@
 'use server'
 
 // Booking settings (deposit, seat hold, cancellation policy, payment provider and methods, bank
-// account for transfers, LINE settings stored for later) and staff roles. Admin only, saved through the Local API as the signed-in admin.
+// account for transfers, shop delivery rules, LINE settings stored for later) and staff roles. Admin only, saved through the Local API as the signed-in admin.
 import { revalidatePath } from 'next/cache'
 
 import { PAY_METHODS, PROVIDERS, type PayMethod, type ProviderId } from '@/lib/payments/types'
@@ -22,6 +22,10 @@ export type SettingsInput = {
   bankName: string
   accountName: string
   accountNumber: string
+  pickupEnabled: boolean
+  shippingEnabled: boolean
+  shippingFee: number
+  freeShippingMin: number
   lineChannelToken: string
   lineTarget: string
   notifyEmail: string
@@ -53,6 +57,10 @@ export async function saveSettingsAction(v: SettingsInput): Promise<ActionResult
       ok: false,
       message: L('เปิดอย่างน้อยหนึ่งช่องทางชำระเงิน', 'Turn on at least one payment method'),
     }
+  const shippingFee = Math.round(Number(v.shippingFee))
+  const freeShippingMin = Math.round(Number(v.freeShippingMin) || 0)
+  if (!(shippingFee >= 0 && shippingFee <= 100000) || !(freeShippingMin >= 0))
+    return { ok: false, message: L('ค่าส่งไม่ถูกต้อง', 'Invalid shipping fee') }
   const policy = (locale: 'th' | 'en') =>
     v.cancellationDirty[locale] ? { cancellationPolicy: textToLexical(v.cancellation[locale]) } : {}
   try {
@@ -69,6 +77,10 @@ export async function saveSettingsAction(v: SettingsInput): Promise<ActionResult
         bankName: opt(v.bankName),
         accountName: opt(v.accountName),
         accountNumber: opt(v.accountNumber),
+        pickupEnabled: Boolean(v.pickupEnabled),
+        shippingEnabled: Boolean(v.shippingEnabled),
+        shippingFee,
+        freeShippingMin,
         lineChannelToken: opt(v.lineChannelToken),
         lineTarget: opt(v.lineTarget),
         notifyEmail: email || null,

@@ -157,7 +157,7 @@ function eventText(e: { event: string; note: string }, L: Tr, lang: Lang) {
   return e.note ? `${text} · ${e.note}` : text
 }
 
-function SlipBox({ p, L }: { p: PaymentVM; L: Tr }) {
+export function SlipBox({ p, L }: { p: PaymentVM; L: Tr }) {
   if (p.slip)
     // eslint-disable-next-line @next/next/no-img-element
     return <img src={p.slip.url} alt={p.slip.alt || L('สลิป', 'Slip')} />
@@ -173,7 +173,7 @@ function SlipBox({ p, L }: { p: PaymentVM; L: Tr }) {
 
 // Result of reading the slip's QR on upload. The QR only holds the bank and transaction
 // reference, so "QR ok" says nothing about the amount or the receiving account.
-function SlipCheck({ p, L }: { p: PaymentVM; L: Tr }) {
+export function SlipCheck({ p, L }: { p: PaymentVM; L: Tr }) {
   if (!p.slipCheck) return null
   return (
     <div className={`slipchk ${p.slipCheck}`}>
@@ -185,9 +185,9 @@ function SlipCheck({ p, L }: { p: PaymentVM; L: Tr }) {
         </span>
       ) : (
         <span className="pill st-cancelled">
-          {L('สลิปซ้ำ ใช้แล้วกับการจอง ', 'Duplicate slip, used on booking ')}
+          {L('สลิปซ้ำ ใช้แล้วกับ ', 'Duplicate slip, used on ')}
           {p.dupOf ? (
-            <Link href={`${BO}/bookings?open=${p.dupOf.id}`}>{p.dupOf.code}</Link>
+            <Link href={p.dupOf.href}>{p.dupOf.code}</Link>
           ) : (
             '-'
           )}
@@ -208,7 +208,7 @@ function SlipCheck({ p, L }: { p: PaymentVM; L: Tr }) {
   )
 }
 
-const payIcon = (p: PaymentVM) =>
+export const payIcon = (p: PaymentVM) =>
   p.provider === 'cash'
     ? 'wallet'
     : p.provider === 'transfer'
@@ -220,7 +220,7 @@ const payIcon = (p: PaymentVM) =>
           : 'slip'
 
 // "Omise · PromptPay QR", "Transfer slip", with a DEMO badge for simulated payments
-function PayVia({ p, lang }: { p: PaymentVM; lang: Lang }) {
+export function PayVia({ p, lang }: { p: PaymentVM; lang: Lang }) {
   const method = p.method && p.provider !== 'slip' && p.provider !== 'cash' ? METHOD_LABEL[p.method] : null
   return (
     <>

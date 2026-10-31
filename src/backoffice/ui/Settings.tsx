@@ -192,6 +192,7 @@ export function SettingsForm({
         <a href="#set-book">{L('การจองและมัดจำ', 'Booking & deposit')}</a>
         <a href="#set-cancel">{L('นโยบายการยกเลิก', 'Cancellation')}</a>
         <a href="#set-pay">{L('ช่องทางรับเงิน', 'Payment channels')}</a>
+        <a href="#set-ship">{L('การจัดส่งสินค้า', 'Shop delivery')}</a>
         <a href="#set-line">{L('การแจ้งเตือน LINE', 'LINE notifications')}</a>
         <a href="#set-staff">{L('ทีมงานและสิทธิ์', 'Staff & roles')}</a>
         <Link href={`${BO}/settings/audit`}>{L('บันทึกการแก้ไข', 'Audit log')}</Link>
@@ -410,6 +411,71 @@ export function SettingsForm({
               </small>
             </dd>
           </dl>
+        </section>
+
+        <section className="card fsec" id="set-ship">
+          <h3>{L('ร้านค้าออนไลน์: การจัดส่ง', 'Online shop: delivery')}</h3>
+          <p className="hint">
+            {L(
+              'ตัวเลือกที่ลูกค้าเห็นในหน้าชำระเงินของร้านค้า ลูกค้าจ่ายเต็มจำนวน ไม่มีมัดจำ',
+              'What customers can choose at the shop checkout. Shop orders are paid in full, no deposit',
+            )}
+          </p>
+          <label className="chk">
+            <input
+              type="checkbox"
+              checked={v.pickupEnabled}
+              onChange={(e) => set('pickupEnabled', e.target.checked)}
+            />
+            <span>{L('รับสินค้าที่ร้าน (ฟรี)', 'Pick up at the shop (free)')}</span>
+          </label>
+          <label className="chk">
+            <input
+              type="checkbox"
+              checked={v.shippingEnabled}
+              onChange={(e) => set('shippingEnabled', e.target.checked)}
+            />
+            <span>{L('ส่งไปรษณีย์', 'Ship by post')}</span>
+          </label>
+          <div className="f3" style={{ marginTop: 12 }}>
+            <label className="field">
+              <span>{L('ค่าส่ง', 'Shipping fee')}</span>
+              <div className="unit">
+                <input
+                  className="inp num"
+                  type="number"
+                  min={0}
+                  value={v.shippingFee}
+                  disabled={!v.shippingEnabled}
+                  onChange={(e) => set('shippingFee', Number(e.target.value))}
+                />
+                <em>{L('บาท', 'THB')}</em>
+              </div>
+            </label>
+            <label className="field">
+              <span>{L('ส่งฟรีเมื่อซื้อครบ (0 = ไม่มี)', 'Free shipping from (0 = never)')}</span>
+              <div className="unit">
+                <input
+                  className="inp num"
+                  type="number"
+                  min={0}
+                  value={v.freeShippingMin}
+                  disabled={!v.shippingEnabled}
+                  onChange={(e) => set('freeShippingMin', Number(e.target.value))}
+                />
+                <em>{L('บาท', 'THB')}</em>
+              </div>
+            </label>
+          </div>
+          {!v.pickupEnabled && !v.shippingEnabled && (
+            <p className="hint warn">
+              <Icon name="alert" />{' '}
+              {L(
+                'ปิดทั้งสองแบบ ลูกค้าจะสั่งซื้อออนไลน์ไม่ได้',
+                'Both are off, so customers cannot order online',
+              )}
+            </p>
+          )}
         </section>
 
         <section className="card fsec" id="set-line">

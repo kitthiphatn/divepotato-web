@@ -82,7 +82,8 @@ export const NAV: NavItem[] = [
     th: 'ร้านค้า',
     en: 'Shop',
     group: 1,
-    roles: ['admin', 'editor'],
+    // Staff only see the orders tab; products and rentals are content (admin, editor)
+    roles: ['admin', 'editor', 'staff'],
   },
   {
     key: 'settings',

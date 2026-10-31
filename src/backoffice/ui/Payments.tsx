@@ -16,13 +16,13 @@ import {
   type Lang,
 } from '../i18n'
 import { Icon } from '../icons'
-import { BO } from '../nav'
 import { Pager } from './Pager'
 
 export type PaymentRow = {
   id: number
-  bookingId: number | null
+  // Booking or shop order the payment belongs to
   code: string
+  href: string | null
   customer: string
   kind: string
   provider: string
@@ -38,7 +38,7 @@ export type PaymentRow = {
 }
 
 // Payments list: status chips, provider filter, slip thumbnails (tap for the full slip) and a
-// link to the booking. Filters and paging live in the URL so the list can be shared.
+// link to the booking or shop order. Filters and paging live in the URL so the list can be shared.
 export function PaymentsList({
   lang,
   rows,
@@ -120,7 +120,7 @@ export function PaymentsList({
         <div className="rows">
           <div className="row payrow head">
             <span>{L('สลิป', 'Slip')}</span>
-            <span>{L('การจอง', 'Booking')}</span>
+            <span>{L('การจอง / คำสั่งซื้อ', 'Booking / order')}</span>
             <span>{L('ประเภท / ช่องทาง', 'Kind / provider')}</span>
             <span>{L('จำนวนเงิน', 'Amount')}</span>
             <span>{L('สถานะ', 'Status')}</span>
@@ -162,7 +162,7 @@ export function PaymentsList({
                 <span style={{ minWidth: 0 }}>
                   <b>{p.customer || L('ไม่ทราบชื่อ', 'Unknown')}</b>
                   <small className="num">
-                    {p.code || `#${p.bookingId ?? '-'}`} · {fd(ymd(p.at), lang)} {shopTime(p.at)}
+                    {p.code || '-'} · {fd(ymd(p.at), lang)} {shopTime(p.at)}
                   </small>
                 </span>
               </span>
@@ -196,13 +196,13 @@ export function PaymentsList({
                 </span>
               </span>
               <span className="go">
-                {p.bookingId && (
+                {p.href && (
                   <Link
                     className="btn t sm"
-                    href={`${BO}/bookings?open=${p.bookingId}`}
-                    aria-label={L(`เปิดการจอง ${p.code}`, `Open booking ${p.code}`)}
+                    href={p.href}
+                    aria-label={L(`เปิด ${p.code}`, `Open ${p.code}`)}
                   >
-                    {L('เปิดการจอง', 'Open')}
+                    {L('เปิด', 'Open')}
                     <Icon name="chev" />
                   </Link>
                 )}

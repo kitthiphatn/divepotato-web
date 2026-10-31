@@ -1,11 +1,12 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
+import { redirect } from 'next/navigation'
 
 import { mediaUrl, relId } from '@/backoffice/data'
 import { Icon } from '@/backoffice/icons'
 import { BO } from '@/backoffice/nav'
 import { requireUser } from '@/backoffice/server'
-import { PRODUCT_ICON, sizeRank } from '@/backoffice/shop'
+import { PRODUCT_ICON, shopTabs, sizeRank } from '@/backoffice/shop'
 import type { Media } from '@/payload-types'
 import { SubTabs } from '@/backoffice/ui/fields'
 import { ShopGrid, type ProductVM } from '@/backoffice/ui/Shop'
@@ -13,7 +14,9 @@ import { ShopGrid, type ProductVM } from '@/backoffice/ui/Shop'
 export const metadata: Metadata = { title: 'ร้านค้า · Shop' }
 
 export default async function ShopPage() {
-  const s = await requireUser(['admin', 'editor'])
+  const s = await requireUser(['admin', 'editor', 'staff'])
+  // Staff work with orders only
+  if (s.role === 'staff') redirect(`${BO}/shop/orders`)
   const { L } = s
   const [products, variants] = await Promise.all([
     s.payload.find({
@@ -73,17 +76,7 @@ export default async function ShopPage() {
           </Link>
         </div>
       </div>
-      <SubTabs
-        items={[
-          { href: `${BO}/shop`, label: L('สินค้า', 'Products'), icon: 'bag', on: true },
-          {
-            href: `${BO}/shop/rentals`,
-            label: L('อุปกรณ์ให้เช่า', 'Rental gear'),
-            icon: 'suit',
-            on: false,
-          },
-        ]}
-      />
+      <SubTabs items={shopTabs(L, s.role, 'products')} />
       <div className="sumchips" style={{ marginBottom: 18 }}>
         <span className="pill st-review">
           {L('ใกล้หมด', 'Low')} {low} {L('ไซซ์', 'sizes')}

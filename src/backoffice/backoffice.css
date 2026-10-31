@@ -1488,6 +1488,34 @@ select.inp {
 .money b.due {
   color: var(--red);
 }
+/* shop order panel: item lines and the tracking number field */
+.oitems {
+  margin-bottom: 12px;
+}
+.oitems li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--ln);
+}
+.oitems li > span {
+  display: grid;
+  min-width: 0;
+}
+.oitems small {
+  font-size: 13px;
+}
+.trk {
+  display: flex;
+  align-items: flex-end;
+  gap: 10px;
+}
+.trk .field {
+  flex: 1;
+  margin-bottom: 0;
+}
 .pay {
   display: flex;
   align-items: center;
