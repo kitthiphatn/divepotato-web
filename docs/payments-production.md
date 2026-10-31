@@ -1,4 +1,4 @@
-# เปิดรับชำระเงินจริง (Omise / Stripe)
+# เปิดรับชำระเงินจริง (Omise / Stripe / KBank)
 
 > **English summary:** how to take real deposits. Card and PromptPay QR go through Omise or Stripe
 > (pick one in the backoffice), bank transfers are checked by staff from the uploaded slip. Put the
@@ -14,6 +14,10 @@
 > refund it. Gear shop orders (`DP-ORD-…`) use the same provider, methods, webhooks and slip review,
 > but the customer pays the full amount; delivery rules (pickup, post, 100 THB fee, free from
 > 3,000 THB) are in **Settings → Shop delivery** and orders are handled in **Shop → Orders**.
+> **KBank (K Payment Gateway, Embedded UI)** is a third choice: set `KBANK_PUBLIC_KEY`,
+> `KBANK_SECRET_KEY`, `KBANK_MID` (cards only) and `KBANK_ENV` (`sandbox` or `production`), and
+> register `https://<domain>/webhooks/kbank` as the Notify URL and
+> `https://<domain>/webhooks/kbank/return` as the Callback URL in the KBank merchant portal (section 8).
 
 หน้าชำระเงินของเว็บมี 3 ช่องทาง
 
@@ -23,8 +27,8 @@
 | QR พร้อมเพย์ | ผ่าน Omise หรือ Stripe ลูกค้าสแกนจ่าย หน้าเว็บยืนยันเองภายในไม่กี่วินาที |
 | โอนเงินแล้วแนบสลิป | ลูกค้าอัปโหลดสลิป ทีมงานตรวจและกดอนุมัติในหลังบ้าน |
 
-เลือกใช้ **Omise หรือ Stripe อย่างใดอย่างหนึ่ง** สลับได้จากหลังบ้านโดยไม่ต้องแก้โค้ด
-ข้อมูลบัตรของลูกค้าส่งตรงไปที่ Omise/Stripe ไม่ผ่านเซิร์ฟเวอร์ของร้าน
+เลือกใช้ **Omise, Stripe หรือ KBank อย่างใดอย่างหนึ่ง** สลับได้จากหลังบ้านโดยไม่ต้องแก้โค้ด
+ข้อมูลบัตรของลูกค้าส่งตรงไปที่ผู้ให้บริการ ไม่ผ่านเซิร์ฟเวอร์ของร้าน (KBank ดูหัวข้อ 8)
 
 ## 1. สมัครและเอาคีย์ / Get the keys
 
@@ -162,11 +166,54 @@ Omise/Stripe ด้วย secret key ของร้านเองทุกค�
 9. [ ] สั่งซื้ออุปกรณ์จากหน้าเว็บ 1 รายการด้วยบัตรทดสอบ แล้วยกเลิก/คืนเงินในหลังบ้าน ตรวจว่าสต็อกกลับมา
 10. [ ] ลบทริป/ราคาทดสอบ (ถ้ามี) และแจ้งทีมงานเรื่องการตรวจสลิปและคำสั่งซื้อ
 
+## 8. KBank (K Payment Gateway)
+
+ใช้ **Embedded UI** ของกสิกรไทย: หน้าชำระเงินเปิดหน้าต่างของ KBank ให้ลูกค้ากรอกบัตรหรือสแกน QR
+ข้อมูลบัตรไม่ผ่านเซิร์ฟเวอร์ของร้าน ระบบได้แค่ token ไปตัดเงินด้วยยอดจากฐานข้อมูล แล้วถามผลจาก KBank
+ด้วย secret key ทุกครั้งก่อนยืนยัน
+
+**สิ่งที่ร้านต้องสมัครกับ KBank**
+
+1. สมัคร **K PAYMENT GATEWAY แบบ Embedded UI** ทั้ง **บัตร (Visa / Mastercard / JCB แบบ 3D Secure)**
+   และ **Thai QR** ถ้าต้องการทั้งสองอย่าง (ระหว่างทดสอบติดต่อ `kpgw_imp@kasikornbank.com`)
+2. ได้ user สำหรับ **Merchant Portal** ของ Sandbox ก่อน ในนั้นมี Public key (`pkey_test_…`)
+   และ Secret key (`skey_test_…`) เมื่อเปิดใช้จริงจะได้ portal และคีย์ชุดจริง (`pkey_prod_…`, `skey_prod_…`)
+3. ขอ **MID (Merchant ID)** สำหรับรับบัตร (15 หลัก) QR ใช้ได้โดยไม่ต้องมี MID
+4. แจ้ง URL สองตัวนี้ให้ KBank (หรือตั้งเองใน Merchant Portal ด้วย user ระดับ Admin) แยกทั้ง Sandbox และจริง
+   - **Notify URL:** `https://<โดเมน>/webhooks/kbank` (รับผลบัตรและ QR แบบ real-time)
+   - **Callback URL:** `https://<โดเมน>/webhooks/kbank/return` (ลูกค้ากลับมาหลังกรอก OTP 3D Secure)
+5. ถ้า KBank ใช้ IP Whitelist ให้แจ้ง IP ของเซิร์ฟเวอร์ด้วย
+
+**ใส่ใน `/opt/divepotato/.env`** แล้วรีสตาร์ท
+
+```bash
+KBANK_PUBLIC_KEY=pkey_test_xxxxxxxx
+KBANK_SECRET_KEY=skey_test_xxxxxxxx
+KBANK_MID=401xxxxxxxxx001
+KBANK_ENV=sandbox
+```
+
+| `KBANK_ENV` | API | สคริปต์หน้าต่างชำระเงิน |
+| --- | --- | --- |
+| `sandbox` (ค่าเริ่มต้น) | `https://dev-kpaymentgateway-services.kasikornbank.com` | `https://dev-kpaymentgateway.kasikornbank.com/ui/v2/kpayment.min.js` |
+| `production` | `https://kpaymentgateway-services.kasikornbank.com` | `https://kpaymentgateway.kasikornbank.com/ui/v2/kpayment.min.js` |
+
+คีย์ชุดทดสอบใช้กับ `sandbox` เท่านั้น คีย์จริงใช้กับ `production` เท่านั้น เปลี่ยนพร้อมกันเสมอ
+ถ้าไม่ใส่ `KBANK_MID` หน้าชำระเงินจะมีแค่ QR (หลังบ้านขึ้นกล่องเตือนสีเหลือง)
+
+- **ทดสอบ QR:** ใน Sandbox ใช้ **QR Simulator** ใน Merchant Portal ค้นหา QR ID แล้วกด Pay
+  หน้าเว็บเปลี่ยนเป็นชำระแล้วเองภายในไม่กี่วินาที
+- **คืนเงิน:** void/refund บัตรทำใน Merchant Portal ของ KBank Thai QR คืนเงินผ่านระบบไม่ได้
+  (void ได้เฉพาะจ่ายผ่าน K PLUS) ต้องโอนคืนเอง
+- Webhook ตรวจ checksum (SHA-256 ด้วย secret key) ถ้าไม่ตรงตอบ 401 ถ้าตรงก็ยังถามผลจาก KBank ซ้ำก่อนยืนยัน
+
 ## แก้ปัญหา / Troubleshooting
 
 | อาการ | สาเหตุ / วิธีแก้ |
 | --- | --- |
 | หน้าชำระเงินมีแค่ "โอนเงิน" | ยังไม่ได้ใส่คีย์ของเจ้าที่เลือก หรือยังไม่ได้รีสตาร์ทหลังแก้ `.env` |
+| KBank: ไม่มีช่องบัตร มีแค่ QR | ยังไม่ได้ใส่ `KBANK_MID` |
+| KBank: ปุ่มชำระกดไม่ได้ / หน้าต่าง KBank ไม่ขึ้น | `KBANK_ENV` ไม่ตรงกับชุดคีย์ (test ต้องคู่กับ `sandbox`) หรือเบราว์เซอร์บล็อกสคริปต์ของ kasikornbank.com |
 | หน้าชำระเงินไม่มี "โอนเงิน" | ยังไม่ได้ใส่เลขที่บัญชีในหลังบ้าน |
 | จ่ายแล้วหลังบ้านยังเป็น "จองไว้" | ตรวจ webhook ในแดชบอร์ด (ดูว่าส่งไม่สำเร็จไหม) และ `journalctl -u divepotato -f` ระบบจะเช็กซ้ำเองตอนลูกค้าเปิดหน้าชำระเงินอีกครั้ง |
 | ลูกค้าจ่ายหลังหมดเวลากันที่นั่ง | ถ้ายังมีที่ว่าง ระบบรับการจองให้ ถ้าเต็มแล้ว ไทม์ไลน์การจองจะขึ้น "ต้องคืนเงินลูกค้า" ให้ทีมงานคืนเงิน |
