@@ -33,40 +33,21 @@ import {
   type Lang,
 } from '../i18n'
 import { Icon } from '../icons'
+import {
+  BOOKING_CHIPS,
+  bookingChipMatch,
+  bookingTotals,
+  filterBookings,
+  listQuery,
+} from '../lists'
 import { BO } from '../nav'
 import type { ActionResult } from '../server'
-import { StatusPill } from './bits'
+import { ListSummary, StatusPill } from './bits'
 import { SubTabs } from './fields'
 import { Modal, Soon } from './Modal'
 import { useToast } from './Toast'
 
 type Tr = ReturnType<typeof translator>
-
-const ORDER: Record<string, number> = {
-  pending_review: 0,
-  hold: 1,
-  deposit_paid: 2,
-  paid: 3,
-  completed: 4,
-  cancelled: 5,
-  refunded: 5,
-  expired: 6,
-}
-// Status chips; "cancelled" also covers refunded bookings
-const CHIPS = [
-  ['review', 'pending_review'],
-  ['hold', 'hold'],
-  ['deposit', 'deposit_paid'],
-  ['paid', 'paid'],
-  ['done', 'completed'],
-  ['cancelled', 'cancelled'],
-  ['expired', 'expired'],
-] as const
-const chipMatch = (chip: string, status: string) =>
-  chip === 'all' ||
-  CHIPS.some(
-    ([k, st]) => k === chip && (st === status || (k === 'cancelled' && status === 'refunded')),
-  )
 
 const minuteNow = () => Math.floor(Date.now() / 60000)
 const subscribeMinute = (cb: () => void) => {
@@ -297,28 +278,13 @@ export function BookingsClient(props: BookingsProps) {
 
   const counts = useMemo(() => {
     const c: Record<string, number> = { all: bookings.length }
-    for (const [k] of CHIPS) c[k] = bookings.filter((b) => chipMatch(k, b.status)).length
+    for (const [k] of BOOKING_CHIPS) c[k] = bookings.filter((b) => bookingChipMatch(k, b.status)).length
     return c
   }, [bookings])
 
-  const list = useMemo(() => {
-    const s = q.trim().toLowerCase()
-    return bookings
-      .filter((b) => chipMatch(chip, b.status))
-      .filter(
-        (b) =>
-          !s ||
-          [b.code, b.customer?.name, b.departure?.name, ...b.participants.map((p) => p.name)]
-            .join(' ')
-            .toLowerCase()
-            .includes(s),
-      )
-      .sort(
-        (a, b) =>
-          (ORDER[a.status] ?? 9) - (ORDER[b.status] ?? 9) ||
-          (a.departure?.start ?? '').localeCompare(b.departure?.start ?? ''),
-      )
-  }, [bookings, chip, q])
+  const list = useMemo(() => filterBookings(bookings, chip, q), [bookings, chip, q])
+  const sum = useMemo(() => bookingTotals(list), [list])
+  const qs = listQuery(chip, q)
 
   return (
     <>
@@ -363,12 +329,20 @@ export function BookingsClient(props: BookingsProps) {
         <button type="button" aria-pressed={chip === 'all'} onClick={() => setChip('all')}>
           {L('ทั้งหมด', 'All')} <sup className="num">{counts.all}</sup>
         </button>
-        {CHIPS.filter(([k]) => k !== 'expired' || counts.expired > 0).map(([k, st]) => (
+        {BOOKING_CHIPS.filter(([k]) => k !== 'expired' || counts.expired > 0).map(([k, st]) => (
           <button key={k} type="button" aria-pressed={chip === k} onClick={() => setChip(k)}>
             {pair(lang, STATUS_LABEL[st])} <sup className="num">{counts[k]}</sup>
           </button>
         ))}
       </div>
+      <ListSummary
+        L={L}
+        sum={sum}
+        noun={L('การจอง', 'bookings')}
+        unit={L('คน', 'pax')}
+        csv={`${BO}/bookings/export${qs}`}
+        pdf={`${BO}/bookings/print${qs}`}
+      />
       <div className="card p0">
         <div className="rows">
           <div className="row head">

@@ -68,6 +68,17 @@ export async function actionUser(roles?: Role[]): Promise<Session | ActionResult
 
 export const isSession = (s: Session | ActionResult): s is Session => 'payload' in s
 
+// For route handlers (exports): same check, but answers 401 when signed out and 403 when the
+// role can't use the screen, instead of redirecting
+export async function routeUser(roles?: Role[]): Promise<Session | Response> {
+  const { payload, user } = await currentUser()
+  if (!user) return new Response('Unauthorized', { status: 401 })
+  const role = roleOf(user)
+  if (!role || (roles && !roles.includes(role))) return new Response('Forbidden', { status: 403 })
+  const lang = await getLang()
+  return { payload, user, role, lang, L: translator(lang), as: { user, overrideAccess: false } }
+}
+
 // A readable message from a Payload error (validation, access)
 export function errorMessage(err: unknown, L: ReturnType<typeof translator>) {
   const e = err as {

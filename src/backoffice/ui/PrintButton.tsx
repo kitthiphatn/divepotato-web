@@ -1,5 +1,7 @@
 'use client'
 
+import { useEffect } from 'react'
+
 import { Icon } from '../icons'
 
 export function PrintButton({ label }: { label: string }) {
@@ -9,4 +11,13 @@ export function PrintButton({ label }: { label: string }) {
       {label}
     </button>
   )
+}
+
+// Opens the print dialog once the page has drawn (the list exports' "Export PDF")
+export function AutoPrint() {
+  useEffect(() => {
+    const t = setTimeout(() => window.print(), 400)
+    return () => clearTimeout(t)
+  }, [])
+  return null
 }
