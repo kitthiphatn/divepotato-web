@@ -2287,6 +2287,48 @@ select.inp {
   color: #b54708;
   font-weight: 600;
 }
+/* list report (Export PDF of bookings and orders) */
+.paper.lrep {
+  font-size: 12px;
+  max-width: 1280px;
+}
+.paper.lrep .mh {
+  align-items: center;
+}
+.paper.lrep td {
+  padding: 7px 6px;
+}
+.paper.lrep small {
+  color: #555;
+  font-size: 11px;
+}
+.paper.lrep .nw {
+  white-space: nowrap;
+}
+.paper th.r,
+.paper td.r {
+  text-align: right;
+  white-space: nowrap;
+}
+.paper .ptot td {
+  border-top: 1.5px solid #111;
+  border-bottom: 0;
+  font-weight: 700;
+  padding-top: 10px;
+}
+/* totals of the current filter above the bookings and orders lists */
+.lsum {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  align-items: center;
+  margin-bottom: 12px;
+}
+.lsum .exp {
+  display: flex;
+  gap: 8px;
+  margin-left: auto;
+}
 
 /* ===== trips ===== */
 .tgrid {
@@ -4103,6 +4145,13 @@ select.inp {
   }
   .paper tr {
     break-inside: avoid;
+  }
+  /* repeat the column titles on every page; the totals row prints once, at the end */
+  .paper thead {
+    display: table-header-group;
+  }
+  .paper tfoot {
+    display: table-row-group;
   }
 }
 

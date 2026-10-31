@@ -1,6 +1,8 @@
 // Small presentational pieces shared by server and client components (no hooks)
-import { STATUS_CLASS, STATUS_LABEL, translator, type Lang } from '../i18n'
+import { money } from '../format'
+import { STATUS_CLASS, STATUS_LABEL, translator, type Lang, type Tr } from '../i18n'
 import { Icon } from '../icons'
+import type { ListTotals } from '../lists'
 
 export function fillClass(booked: number, capacity: number, status?: string) {
   const r = capacity ? booked / capacity : 0
@@ -56,4 +58,49 @@ export function Img({ src, alt = '' }: { src: string | null | undefined; alt?: s
     )
   // eslint-disable-next-line @next/next/no-img-element
   return <img src={src} alt={alt} loading="lazy" />
+}
+
+// Totals of the rows a list shows (its current filter and search), with the CSV and PDF exports
+// of exactly those rows
+export function ListSummary({
+  L,
+  sum,
+  noun,
+  unit,
+  csv,
+  pdf,
+}: {
+  L: Tr
+  sum: ListTotals
+  noun: string
+  unit: string
+  csv: string
+  pdf: string
+}) {
+  return (
+    <div className="lsum">
+      <span className="tagc num">
+        {sum.count} {noun} · {sum.people} {unit}
+      </span>
+      <span className="tagc num">
+        {L('ยอดรวม', 'Total')} {money(sum.total)}
+      </span>
+      <span className="tagc num">
+        {L('ชำระแล้ว', 'Paid')} {money(sum.paid)}
+      </span>
+      <span className="tagc num">
+        {L('ค้างชำระ', 'Due')} {money(sum.due)}
+      </span>
+      <span className="exp">
+        <a className="btn o sm" href={csv} download>
+          <Icon name="download" />
+          {L('ส่งออก CSV', 'Export CSV')}
+        </a>
+        <a className="btn o sm" href={pdf} target="_blank" rel="noopener">
+          <Icon name="print" />
+          {L('ส่งออก PDF', 'Export PDF')}
+        </a>
+      </span>
+    </div>
+  )
 }
