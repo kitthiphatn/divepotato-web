@@ -97,8 +97,71 @@ export async function up({ db, payload, req }: MigrateUpArgs): Promise<void> {
   await db.run(sql`CREATE INDEX \`payments_reviewed_by_idx\` ON \`payments\` (\`reviewed_by_id\`);`)
   await db.run(sql`CREATE INDEX \`payments_updated_at_idx\` ON \`payments\` (\`updated_at\`);`)
   await db.run(sql`CREATE INDEX \`payments_created_at_idx\` ON \`payments\` (\`created_at\`);`)
-  await db.run(sql`ALTER TABLE \`payload_locked_documents_rels\` ADD \`orders_id\` integer REFERENCES orders(id);`)
-  await db.run(sql`CREATE INDEX \`payload_locked_documents_rels_orders_id_idx\` ON \`payload_locked_documents_rels\` (\`orders_id\`);`)
+  // Rebuilt instead of ALTER TABLE ADD so the new foreign key gets ON DELETE cascade like the
+  // others; otherwise dev schema push sees a difference and fails recreating the table
+  await db.run(sql`PRAGMA foreign_keys=OFF;`)
+  await db.run(sql`CREATE TABLE \`__new_payload_locked_documents_rels\` (
+	\`id\` integer PRIMARY KEY NOT NULL,
+	\`order\` integer,
+	\`parent_id\` integer NOT NULL,
+	\`path\` text NOT NULL,
+	\`bookings_id\` integer,
+	\`departures_id\` integer,
+	\`customers_id\` integer,
+	\`payments_id\` integer,
+	\`trips_id\` integer,
+	\`courses_id\` integer,
+	\`dive_sites_id\` integer,
+	\`products_id\` integer,
+	\`product_variants_id\` integer,
+	\`orders_id\` integer,
+	\`rental_items_id\` integer,
+	\`posts_id\` integer,
+	\`faqs_id\` integer,
+	\`media_id\` integer,
+	\`users_id\` integer,
+	\`audit_logs_id\` integer,
+	FOREIGN KEY (\`parent_id\`) REFERENCES \`payload_locked_documents\`(\`id\`) ON UPDATE no action ON DELETE cascade,
+	FOREIGN KEY (\`bookings_id\`) REFERENCES \`bookings\`(\`id\`) ON UPDATE no action ON DELETE cascade,
+	FOREIGN KEY (\`departures_id\`) REFERENCES \`departures\`(\`id\`) ON UPDATE no action ON DELETE cascade,
+	FOREIGN KEY (\`customers_id\`) REFERENCES \`customers\`(\`id\`) ON UPDATE no action ON DELETE cascade,
+	FOREIGN KEY (\`payments_id\`) REFERENCES \`payments\`(\`id\`) ON UPDATE no action ON DELETE cascade,
+	FOREIGN KEY (\`trips_id\`) REFERENCES \`trips\`(\`id\`) ON UPDATE no action ON DELETE cascade,
+	FOREIGN KEY (\`courses_id\`) REFERENCES \`courses\`(\`id\`) ON UPDATE no action ON DELETE cascade,
+	FOREIGN KEY (\`dive_sites_id\`) REFERENCES \`dive_sites\`(\`id\`) ON UPDATE no action ON DELETE cascade,
+	FOREIGN KEY (\`products_id\`) REFERENCES \`products\`(\`id\`) ON UPDATE no action ON DELETE cascade,
+	FOREIGN KEY (\`product_variants_id\`) REFERENCES \`product_variants\`(\`id\`) ON UPDATE no action ON DELETE cascade,
+	FOREIGN KEY (\`orders_id\`) REFERENCES \`orders\`(\`id\`) ON UPDATE no action ON DELETE cascade,
+	FOREIGN KEY (\`rental_items_id\`) REFERENCES \`rental_items\`(\`id\`) ON UPDATE no action ON DELETE cascade,
+	FOREIGN KEY (\`posts_id\`) REFERENCES \`posts\`(\`id\`) ON UPDATE no action ON DELETE cascade,
+	FOREIGN KEY (\`faqs_id\`) REFERENCES \`faqs\`(\`id\`) ON UPDATE no action ON DELETE cascade,
+	FOREIGN KEY (\`media_id\`) REFERENCES \`media\`(\`id\`) ON UPDATE no action ON DELETE cascade,
+	FOREIGN KEY (\`users_id\`) REFERENCES \`users\`(\`id\`) ON UPDATE no action ON DELETE cascade,
+	FOREIGN KEY (\`audit_logs_id\`) REFERENCES \`audit_logs\`(\`id\`) ON UPDATE no action ON DELETE cascade
+)
+`)
+  await db.run(sql`INSERT INTO \`__new_payload_locked_documents_rels\`("id", "order", "parent_id", "path", "bookings_id", "departures_id", "customers_id", "payments_id", "trips_id", "courses_id", "dive_sites_id", "products_id", "product_variants_id", "orders_id", "rental_items_id", "posts_id", "faqs_id", "media_id", "users_id", "audit_logs_id") SELECT "id", "order", "parent_id", "path", "bookings_id", "departures_id", "customers_id", "payments_id", "trips_id", "courses_id", "dive_sites_id", "products_id", "product_variants_id", NULL, "rental_items_id", "posts_id", "faqs_id", "media_id", "users_id", "audit_logs_id" FROM \`payload_locked_documents_rels\`;`)
+  await db.run(sql`DROP TABLE \`payload_locked_documents_rels\`;`)
+  await db.run(sql`ALTER TABLE \`__new_payload_locked_documents_rels\` RENAME TO \`payload_locked_documents_rels\`;`)
+  await db.run(sql`PRAGMA foreign_keys=ON;`)
+  await db.run(sql`CREATE INDEX \`payload_locked_documents_rels_order_idx\` ON \`payload_locked_documents_rels\` (\`order\`);`)
+  await db.run(sql`CREATE INDEX \`payload_locked_documents_rels_parent_idx\` ON \`payload_locked_documents_rels\` (\`parent_id\`);`)
+  await db.run(sql`CREATE INDEX \`payload_locked_documents_rels_path_idx\` ON \`payload_locked_documents_rels\` (\`path\`);`)
+  await db.run(sql`CREATE INDEX \`payload_locked_documents_rels_bookings_id_idx\` ON \`payload_locked_documents_rels\` (\`bookings_id\`);`)
+  await db.run(sql`CREATE INDEX \`payload_locked_documents_rels_departures_id_idx\` ON \`payload_locked_documents_rels\` (\`departures_id\`);`)
+  await db.run(sql`CREATE INDEX \`payload_locked_documents_rels_customers_id_idx\` ON \`payload_locked_documents_rels\` (\`customers_id\`);`)
+  await db.run(sql`CREATE INDEX \`payload_locked_documents_rels_payments_id_idx\` ON \`payload_locked_documents_rels\` (\`payments_id\`);`)
+  await db.run(sql`CREATE INDEX \`payload_locked_documents_rels_trips_id_idx\` ON \`payload_locked_documents_rels\` (\`trips_id\`);`)
+  await db.run(sql`CREATE INDEX \`payload_locked_documents_rels_courses_id_idx\` ON \`payload_locked_documents_rels\` (\`courses_id\`);`)
+  await db.run(sql`CREATE INDEX \`payload_locked_documents_rels_dive_sites_id_idx\` ON \`payload_locked_documents_rels\` (\`dive_sites_id\`);`)
+  await db.run(sql`CREATE INDEX \`payload_locked_documents_rels_products_id_idx\` ON \`payload_locked_documents_rels\` (\`products_id\`);`)
+  await db.run(sql`CREATE INDEX \`payload_locked_documents_rels_product_variants_id_idx\` ON \`payload_locked_documents_rels\` (\`product_variants_id\`);`)
+  await db.run(sql`CREATE INDEX \`payload_locked_documents_rels_rental_items_id_idx\` ON \`payload_locked_documents_rels\` (\`rental_items_id\`);`)
+  await db.run(sql`CREATE INDEX \`payload_locked_documents_rels_posts_id_idx\` ON \`payload_locked_documents_rels\` (\`posts_id\`);`)
+  await db.run(sql`CREATE INDEX \`payload_locked_documents_rels_faqs_id_idx\` ON \`payload_locked_documents_rels\` (\`faqs_id\`);`)
+  await db.run(sql`CREATE INDEX \`payload_locked_documents_rels_media_id_idx\` ON \`payload_locked_documents_rels\` (\`media_id\`);`)
+  await db.run(sql`CREATE INDEX \`payload_locked_documents_rels_users_id_idx\` ON \`payload_locked_documents_rels\` (\`users_id\`);`)
+  await db.run(sql`CREATE INDEX \`payload_locked_documents_rels_audit_logs_id_idx\` ON \`payload_locked_documents_rels\` (\`audit_logs_id\`);`)
   await db.run(sql`ALTER TABLE \`booking_settings\` ADD \`pickup_enabled\` integer DEFAULT true;`)
   await db.run(sql`ALTER TABLE \`booking_settings\` ADD \`shipping_enabled\` integer DEFAULT true;`)
   await db.run(sql`ALTER TABLE \`booking_settings\` ADD \`shipping_fee\` numeric DEFAULT 100 NOT NULL;`)
