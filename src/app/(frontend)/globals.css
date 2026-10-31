@@ -192,6 +192,10 @@ button {
 }
 .pill.full {
   width: 100%;
+  /* full-width buttons wrap long labels instead of spilling past their edges on phones */
+  white-space: normal;
+  text-align: center;
+  padding-block: 10px;
 }
 .pill[disabled] {
   opacity: 0.5;
@@ -2737,6 +2741,7 @@ textarea.inp {
   padding: 4px 8px;
   border-radius: 999px;
   text-transform: uppercase;
+  flex: none;
 }
 .demon {
   font-size: 14px;
@@ -2850,21 +2855,20 @@ textarea.inp {
   padding: 2px 12px;
 }
 .qrwait {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
   font-size: 14px;
   color: var(--mu);
   margin-top: 14px;
   text-align: center;
+  text-wrap: balance;
 }
 .qrwait i {
+  display: inline-block;
   width: 8px;
   height: 8px;
+  margin-right: 8px;
+  vertical-align: 0.1em;
   border-radius: 50%;
   background: var(--y);
-  flex: none;
   animation: blink 1.2s ease-in-out infinite;
 }
 @keyframes blink {
@@ -2872,13 +2876,28 @@ textarea.inp {
     opacity: 0.25;
   }
 }
+/* on narrow phones the value and its copy button drop under the label instead of squeezing it */
+.bankd div {
+  flex-wrap: wrap;
+  align-items: center;
+  row-gap: 4px;
+}
+.bankd dt {
+  white-space: nowrap;
+}
 .bankd dd {
+  margin-left: auto;
   display: flex;
   align-items: center;
   gap: 10px;
   text-align: right;
   min-width: 0;
   overflow-wrap: anywhere;
+}
+/* account numbers and amounts stay on one line so they read and copy as one */
+.bankd dd.num {
+  white-space: nowrap;
+  overflow-wrap: normal;
 }
 .cpy {
   font-size: 13px;
