@@ -179,6 +179,19 @@ export const syncSeatsAfterDelete: CollectionAfterDeleteHook = async ({ doc, req
   return doc
 }
 
+// Counting a departure's free seats and creating the booking happen one at a time per departure
+// (the site runs as a single Node process), so a rush of bookings can't sell the same seat twice.
+// Other departures are not held up.
+const g = globalThis as unknown as { __seatLocks?: Map<number, Promise<unknown>> }
+export async function withSeatLock<T>(departureId: number, fn: () => Promise<T>): Promise<T> {
+  const locks = (g.__seatLocks ??= new Map())
+  const run = (locks.get(departureId) ?? Promise.resolve()).catch(() => null).then(fn)
+  const tail = run.catch(() => null)
+  locks.set(departureId, tail)
+  void tail.then(() => locks.get(departureId) === tail && locks.delete(departureId))
+  return run
+}
+
 // Mark `hold` bookings whose hold has run out as `expired`; the seat hook then gives their seats
 // back. There is no background job: this runs when a booking is requested, when a pay page
 // loads and when staff open the bookings list. Optionally limited to one departure.

@@ -3,7 +3,7 @@
 import config from '@payload-config'
 import { getPayload } from 'payload'
 
-import { expireStaleHolds } from '@/hooks/bookings'
+import { expireStaleHolds, withSeatLock } from '@/hooks/bookings'
 import { isLocale, type Locale } from '@/i18n/config'
 import { dayStart, shopDay } from '@/lib/dates'
 import { payPath } from '@/lib/payments/link'
@@ -15,8 +15,9 @@ export type BookingRequestState =
   | { ok: false; error: string; field?: string }
   | null
 
-// 5 requests per IP per 10 minutes
-const limited = rateLimiter(5, 10 * 60_000)
+// 20 requests per IP per 10 minutes: high enough for many phones behind one mobile-network IP
+// on a busy booking day, low enough to stop a script
+const limited = rateLimiter(20, 10 * 60_000)
 
 const LINE_ID = /^@?[A-Za-z0-9._-]{2,40}$/
 
@@ -40,7 +41,8 @@ export async function requestBooking(
   const phone = str(form.get('phone'), 30)
   const email = str(form.get('email'), 120).toLowerCase()
   const lineId = str(form.get('lineId'), 50)
-  const note = typeof form.get('note') === 'string' ? String(form.get('note')).trim().slice(0, 1000) : ''
+  const note =
+    typeof form.get('note') === 'string' ? String(form.get('note')).trim().slice(0, 1000) : ''
   const pax = Number(form.get('pax'))
   const departureId = Number(form.get('departure'))
 
@@ -48,7 +50,8 @@ export async function requestBooking(
   if (!PHONE.test(phone)) return { ok: false, error: e.phone, field: 'phone' }
   if (email && !EMAIL.test(email)) return { ok: false, error: e.email, field: 'email' }
   if (lineId && !LINE_ID.test(lineId)) return { ok: false, error: e.line, field: 'lineId' }
-  if (!Number.isInteger(pax) || pax < 1 || pax > 20) return { ok: false, error: e.pax, field: 'pax' }
+  if (!Number.isInteger(pax) || pax < 1 || pax > 20)
+    return { ok: false, error: e.pax, field: 'pax' }
   if (!Number.isInteger(departureId) || departureId < 1)
     return { ok: false, error: e.departure, field: 'departure' }
 
@@ -57,55 +60,62 @@ export async function requestBooking(
 
   try {
     const payload = await getPayload({ config })
-    // Give back seats from holds that ran out before counting what's left
-    await expireStaleHolds(payload, departureId)
-    const dep = await payload
-      .findByID({ collection: 'departures', id: departureId, depth: 0, overrideAccess: true })
-      .catch(() => null)
-    const today = dayStart(shopDay(new Date()))
-    if (!dep || dep.status !== 'open' || new Date(dep.startDate).toISOString() < today)
-      return { ok: false, error: e.departure, field: 'departure' }
-    const left = Math.max(0, (dep.capacity ?? 0) - (dep.seatsBooked ?? 0) - (dep.seatsHeld ?? 0))
-    if (pax > left) return { ok: false, error: e.seats(left), field: 'pax' }
+    return await withSeatLock(departureId, async (): Promise<BookingRequestState> => {
+      // Give back seats from holds that ran out before counting what's left
+      await expireStaleHolds(payload, departureId)
+      const dep = await payload
+        .findByID({ collection: 'departures', id: departureId, depth: 0, overrideAccess: true })
+        .catch(() => null)
+      const today = dayStart(shopDay(new Date()))
+      if (!dep || dep.status !== 'open' || new Date(dep.startDate).toISOString() < today)
+        return { ok: false, error: e.departure, field: 'departure' }
+      const left = Math.max(0, (dep.capacity ?? 0) - (dep.seatsBooked ?? 0) - (dep.seatsHeld ?? 0))
+      if (pax > left) return { ok: false, error: e.seats(left), field: 'pax' }
 
-    const customer = await payload.create({
-      collection: 'customers',
-      data: {
-        name,
-        phone,
-        email: email || undefined,
-        lineId: lineId || undefined,
-        notes: `${locale === 'th' ? 'จองผ่านเว็บไซต์' : 'Website booking'} (${locale.toUpperCase()})${note ? `\n${note}` : ''}`,
-      },
-      overrideAccess: true,
+      const customer = await payload.create({
+        collection: 'customers',
+        data: {
+          name,
+          phone,
+          email: email || undefined,
+          lineId: lineId || undefined,
+          notes: `${locale === 'th' ? 'จองผ่านเว็บไซต์' : 'Website booking'} (${locale.toUpperCase()})${note ? `\n${note}` : ''}`,
+        },
+        overrideAccess: true,
+      })
+      const booking = await payload.create({
+        collection: 'bookings',
+        data: {
+          status: 'hold',
+          source: 'website',
+          departure: dep.id,
+          customer: customer.id,
+          // Names of the other guests and health forms come later, when the team confirms
+          participants: Array.from({ length: pax }, (_, i) => ({
+            name: i === 0 ? name : `${locale === 'th' ? 'ผู้เดินทาง' : 'Guest'} ${i + 1}`,
+            healthOk: false,
+          })),
+          timeline: [
+            {
+              at: new Date().toISOString(),
+              event: 'website booking (hold)',
+              note:
+                [lineId && `LINE ${lineId}`, note].filter(Boolean).join(' · ').slice(0, 500) ||
+                undefined,
+            },
+          ],
+        },
+        overrideAccess: true,
+      })
+      return {
+        ok: true,
+        code: booking.code ?? null,
+        payUrl:
+          booking.code && booking.payToken
+            ? payPath(locale, booking.code, booking.payToken)
+            : undefined,
+      }
     })
-    const booking = await payload.create({
-      collection: 'bookings',
-      data: {
-        status: 'hold',
-        source: 'website',
-        departure: dep.id,
-        customer: customer.id,
-        // Names of the other guests and health forms come later, when the team confirms
-        participants: Array.from({ length: pax }, (_, i) => ({
-          name: i === 0 ? name : `${locale === 'th' ? 'ผู้เดินทาง' : 'Guest'} ${i + 1}`,
-          healthOk: false,
-        })),
-        timeline: [
-          {
-            at: new Date().toISOString(),
-            event: 'website booking (hold)',
-            note: [lineId && `LINE ${lineId}`, note].filter(Boolean).join(' · ').slice(0, 500) || undefined,
-          },
-        ],
-      },
-      overrideAccess: true,
-    })
-    return {
-      ok: true,
-      code: booking.code ?? null,
-      payUrl: booking.code && booking.payToken ? payPath(locale, booking.code, booking.payToken) : undefined,
-    }
   } catch (err) {
     console.error('Booking request failed', err)
     return { ok: false, error: e.server }
