@@ -3,6 +3,7 @@ import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { getPayload } from 'payload'
 
+import { isOneSize } from '@/backoffice/shop'
 import { expireStaleOrders } from '@/hooks/orders'
 import type { Locale } from '@/i18n/config'
 import { getSite } from '@/lib/content'
@@ -90,7 +91,7 @@ export async function OrderPay({ locale, code, token }: { locale: Locale; code: 
                 <span>
                   <b>{it.title}</b>
                   <small>
-                    {[it.size, `× ${it.qty}`].filter(Boolean).join(' · ')}
+                    {[it.size && !isOneSize(it.size) && it.size, `× ${it.qty}`].filter(Boolean).join(' · ')}
                   </small>
                 </span>
                 <span className="num">{money(it.lineTotal)}</span>

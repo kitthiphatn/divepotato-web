@@ -85,3 +85,13 @@ export function MailIcon() {
     </svg>
   )
 }
+
+// Shopping bag for the header cart link
+export function BagIcon() {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinejoin="round" strokeLinecap="round" aria-hidden="true">
+      <path d="M5 8h14l-1 12H6Z" />
+      <path d="M9 10V7a3 3 0 0 1 6 0v3" />
+    </svg>
+  )
+}

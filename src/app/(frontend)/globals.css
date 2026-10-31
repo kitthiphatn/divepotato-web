@@ -2960,6 +2960,268 @@ textarea.inp {
   margin-top: 22px;
 }
 
+/* ---------- shop: header cart, add to cart, cart and checkout ---------- */
+.cartb {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+}
+.cartb svg {
+  width: 22px;
+  height: 22px;
+}
+.cartb .cnt {
+  position: absolute;
+  top: 4px;
+  right: 2px;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
+  border-radius: 999px;
+  background: var(--y);
+  color: var(--k);
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 18px;
+  text-align: center;
+}
+.ulnk {
+  color: var(--k);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  text-decoration-color: #c7c7cc;
+}
+.ulnk:hover {
+  text-decoration-color: currentColor;
+}
+.atc {
+  margin-top: 8px;
+}
+.payh h1 .num {
+  white-space: nowrap;
+}
+.szs {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(88px, 1fr));
+  gap: 8px;
+}
+.szo {
+  position: relative;
+  display: grid;
+  gap: 2px;
+  justify-items: center;
+  border: 1px solid var(--ln);
+  border-radius: 14px;
+  padding: 10px 8px;
+  cursor: pointer;
+  text-align: center;
+  transition: border-color 0.2s;
+}
+.szo input {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  cursor: pointer;
+  margin: 0;
+}
+.szo b {
+  font-weight: 600;
+  font-size: 15px;
+}
+.szo small {
+  color: var(--mu);
+  font-size: 12px;
+}
+.szo:has(input:checked) {
+  border-color: var(--k);
+  box-shadow: inset 0 0 0 1px var(--k);
+}
+.szo:has(input:focus-visible) {
+  outline: 2px solid var(--k);
+  outline-offset: 2px;
+}
+.szo.out {
+  opacity: 0.45;
+  cursor: default;
+}
+.szo.out b {
+  text-decoration: line-through;
+}
+.szo.out input {
+  cursor: default;
+}
+.atc .added {
+  margin-top: 10px;
+  text-align: center;
+  font-size: 14px;
+  color: var(--grn);
+}
+.cartp {
+  max-width: 1040px;
+}
+.cartp .payh {
+  margin-bottom: 20px;
+}
+.cartw {
+  display: grid;
+  gap: 20px;
+}
+.clines {
+  border-top: 1px solid var(--ln);
+}
+.clines li {
+  display: grid;
+  grid-template-columns: 72px minmax(0, 1fr) auto;
+  gap: 14px;
+  align-items: start;
+  padding: 16px 0;
+  border-bottom: 1px solid var(--ln);
+}
+.clines li.out .cim,
+.clines li.out .cl-t {
+  opacity: 0.5;
+}
+.cim {
+  display: grid;
+  place-items: center;
+  width: 72px;
+  aspect-ratio: 1;
+  border-radius: 14px;
+  background: var(--gr);
+  color: #3a3a3c;
+  overflow: hidden;
+}
+.cim img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.cim svg {
+  width: 60%;
+  height: 60%;
+}
+.cl-i {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+.cl-i .cl-t {
+  font-weight: 500;
+}
+.cl-i small {
+  color: var(--mu);
+  font-size: 14px;
+}
+.cnote {
+  color: var(--red);
+  font-size: 13px;
+}
+.crow {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-top: 8px;
+}
+.crow .stepper button {
+  width: 36px;
+  height: 36px;
+  font-size: 18px;
+}
+.crow .ulnk {
+  font-size: 14px;
+  color: var(--mu);
+}
+.cprice {
+  font-weight: 600;
+  white-space: nowrap;
+}
+.csum .sum {
+  margin-top: 0;
+}
+.csum .pill.full {
+  min-height: 52px;
+  margin-top: 12px;
+  font-size: 16px;
+}
+.csum .pill.o {
+  min-height: 44px;
+  font-size: 15px;
+}
+.cempty {
+  text-align: center;
+  padding: 48px 0;
+}
+.cempty h2 {
+  font-size: 24px;
+}
+.cempty p {
+  color: var(--mu);
+  margin: 8px 0 20px;
+}
+.sumh {
+  font-size: 17px;
+  font-weight: 600;
+  margin-bottom: 4px;
+}
+.olist {
+  display: grid;
+  gap: 12px;
+  margin-bottom: 14px;
+}
+.olist li {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 15px;
+}
+.olist li > span:not(.cim):not(.num) {
+  flex: 1;
+  display: grid;
+  min-width: 0;
+}
+.olist small {
+  color: var(--mu);
+  font-size: 13px;
+}
+.olist .cim {
+  width: 52px;
+  border-radius: 10px;
+}
+.olist .num {
+  white-space: nowrap;
+}
+.oaddr {
+  margin-top: 12px;
+  font-size: 14px;
+  color: var(--mu);
+  white-space: pre-line;
+}
+.sback {
+  display: inline-block;
+  margin-top: 14px;
+  font-size: 14px;
+}
+.cow .paysum .sum {
+  margin-top: 0;
+}
+.cow .dts .opt small {
+  font-size: 13px;
+}
+@media (min-width: 860px) {
+  .cartw {
+    grid-template-columns: minmax(0, 1fr) 340px;
+    column-gap: 40px;
+    align-items: start;
+  }
+  .csum {
+    position: sticky;
+    top: calc(var(--hh) + 24px);
+  }
+}
+
 /* ---------- popup ---------- */
 .pop {
   position: fixed;

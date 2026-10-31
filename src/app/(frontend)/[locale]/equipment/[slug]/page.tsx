@@ -3,12 +3,14 @@ import Image from 'next/image'
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
 
+import { sizeRank } from '@/backoffice/shop'
 import { isLocale } from '@/i18n/config'
 import { getProduct, getSite, mediaOf } from '@/lib/content'
 import type { Media } from '@/payload-types'
-import { cleanContact, money } from '@/site/format'
+import { money } from '@/site/format'
 import { getDict } from '@/site/i18n'
-import { GearIcon, LineIcon } from '@/site/icons'
+import { AddToCart } from '@/site/components/AddToCart'
+import { GearIcon } from '@/site/icons'
 import { absUrl, jsonLd, pageMeta } from '@/site/seo'
 
 type Props = { params: Promise<{ locale: string; slug: string }> }
@@ -32,7 +34,8 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   })
 }
 
-// Product page. No cart or checkout until phase 4: orders go through LINE.
+// Product page: pick a size and quantity and add it to the cart (see AddToCart); asking on LINE
+// stays as a small link.
 export default async function ProductPage({ params }: Props) {
   const { locale, slug } = await params
   if (!isLocale(locale)) notFound()
@@ -46,7 +49,6 @@ export default async function ProductPage({ params }: Props) {
   const inStock = product.sizes.some((v) => (v.stock ?? 0) > 0)
   const c = site?.settings.contact
   const lineUrl = c?.lineUrl && /^https?:\/\//i.test(c.lineUrl) ? c.lineUrl : null
-  const lineId = cleanContact(c?.lineId)
 
   const ld = {
     '@context': 'https://schema.org',
@@ -143,15 +145,12 @@ export default async function ProductPage({ params }: Props) {
                   </tbody>
                 </table>
               )}
-              {lineUrl ? (
-                <>
-                  <a className="pill y" href={lineUrl} target="_blank" rel="noopener noreferrer">
-                    <LineIcon />
-                    {t.gear.orderLine}
-                  </a>
-                  <p className="hint">{t.gear.lineHint(lineId || 'LINE')}</p>
-                </>
-              ) : null}
+              <AddToCart
+                locale={locale}
+                product={{ slug: product.slug, title: product.title, image: images[0]?.url ?? null }}
+                sizes={[...product.sizes].sort((a, b) => sizeRank(a.size ?? '') - sizeRank(b.size ?? '')).map((v) => ({ id: v.id, size: v.size ?? '', price: v.price, stock: v.stock ?? 0 }))}
+                lineUrl={lineUrl}
+              />
               {!inStock && product.sizes.length > 0 && <p className="hint">{t.gear.outOfStock}</p>}
             </div>
           </div>

@@ -1,13 +1,13 @@
 'use server'
 
 import config from '@payload-config'
-import { headers } from 'next/headers'
 import { getPayload } from 'payload'
 
 import { expireStaleHolds } from '@/hooks/bookings'
 import { isLocale, type Locale } from '@/i18n/config'
 import { dayStart, shopDay } from '@/lib/dates'
 import { payPath } from '@/lib/payments/link'
+import { clientIp, EMAIL, PHONE, rateLimiter, str } from '@/site/forms'
 import { getDict } from '@/site/i18n'
 
 export type BookingRequestState =
@@ -15,31 +15,9 @@ export type BookingRequestState =
   | { ok: false; error: string; field?: string }
   | null
 
-// Simple per-IP limit, kept in this server process: 5 requests per 10 minutes
-const WINDOW_MS = 10 * 60_000
-const MAX_PER_WINDOW = 5
-const hits = new Map<string, number[]>()
+// 5 requests per IP per 10 minutes
+const limited = rateLimiter(5, 10 * 60_000)
 
-function limited(ip: string) {
-  const now = Date.now()
-  const recent = (hits.get(ip) ?? []).filter((t) => now - t < WINDOW_MS)
-  if (recent.length >= MAX_PER_WINDOW) {
-    hits.set(ip, recent)
-    return true
-  }
-  recent.push(now)
-  hits.set(ip, recent)
-  // Drop stale entries now and then so the map can't grow without bound
-  if (hits.size > 5000)
-    for (const [k, v] of hits) if (!v.some((t) => now - t < WINDOW_MS)) hits.delete(k)
-  return false
-}
-
-const str = (v: FormDataEntryValue | null, max: number) =>
-  typeof v === 'string' ? v.trim().replace(/\s+/g, ' ').slice(0, max) : ''
-
-const PHONE = /^\+?[0-9][0-9 ()-]{6,18}[0-9]$/
-const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/
 const LINE_ID = /^@?[A-Za-z0-9._-]{2,40}$/
 
 // Booking from a trip or course page. Records the customer and a booking on `hold`, which keeps
@@ -75,10 +53,7 @@ export async function requestBooking(
     return { ok: false, error: e.departure, field: 'departure' }
 
   // Counted once the form is valid, so a typo doesn't use up someone's tries
-  const h = await headers()
-  const ip =
-    h.get('x-forwarded-for')?.split(',')[0]?.trim() || h.get('x-real-ip')?.trim() || 'unknown'
-  if (limited(ip)) return { ok: false, error: e.rate }
+  if (limited(await clientIp())) return { ok: false, error: e.rate }
 
   try {
     const payload = await getPayload({ config })

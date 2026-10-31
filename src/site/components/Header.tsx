@@ -5,6 +5,8 @@ import { usePathname } from 'next/navigation'
 import { useCallback, useEffect, useRef, useState } from 'react'
 
 import type { Locale } from '@/i18n/config'
+import { cartCount, useCart } from '@/site/cart'
+import { BagIcon } from '@/site/icons'
 
 export type NavItem = { href: string; label: string; key: string }
 
@@ -23,6 +25,7 @@ type Props = {
     bookOw: string
     language: string
     phone: string
+    cart: string
   }
 }
 
@@ -43,6 +46,7 @@ export function Header({ locale, siteName, logo, items, bookHref, phone, labels 
   const [solid, setSolid] = useState(false)
   const [open, setOpen] = useState(false)
   const burger = useRef<HTMLButtonElement>(null)
+  const count = cartCount(useCart())
 
   // The announcement bar scrolls away; the fixed header follows it up, as in the design file
   useEffect(() => {
@@ -136,6 +140,19 @@ export function Header({ locale, siteName, logo, items, bookHref, phone, labels 
             <div className="lang" role="group" aria-label={labels.language}>
               {langLinks}
             </div>
+            <Link
+              className="cartb"
+              href={`/${locale}/cart`}
+              aria-label={count ? `${labels.cart} (${count})` : labels.cart}
+              aria-current={path === `/${locale}/cart` ? 'page' : undefined}
+            >
+              <BagIcon />
+              {count > 0 && (
+                <span className="cnt num" aria-hidden="true">
+                  {count > 99 ? '99+' : count}
+                </span>
+              )}
+            </Link>
             <Link className="pill y sm bk" href={bookHref}>
               {labels.bookNow}
             </Link>
