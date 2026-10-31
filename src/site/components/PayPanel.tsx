@@ -19,7 +19,12 @@ type Labels = Dict['pay']
 const baht = (n: number) => `฿${Math.round(n).toLocaleString('en-US')}`
 const fill = (s: string, vars: Record<string, string>) =>
   s.replace(/\{(\w+)\}/g, (_, k: string) => vars[k] ?? '')
-const PROVIDER_NAME: Record<ProviderId, string> = { demo: 'Demo', omise: 'Omise', stripe: 'Stripe' }
+const PROVIDER_NAME: Record<ProviderId, string> = {
+  demo: 'Demo',
+  omise: 'Omise',
+  stripe: 'Stripe',
+  kbank: 'KBank',
+}
 
 // Minimal shapes of the two gateways' browser libraries, loaded only when that provider is on
 type OmiseJs = {

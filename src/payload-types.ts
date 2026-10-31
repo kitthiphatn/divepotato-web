@@ -482,7 +482,7 @@ export interface Payment {
   id: number;
   booking?: (number | null) | Booking;
   order?: (number | null) | Order;
-  provider: 'omise' | 'stripe' | 'demo' | 'slip' | 'cash' | 'transfer';
+  provider: 'omise' | 'stripe' | 'kbank' | 'demo' | 'slip' | 'cash' | 'transfer';
   method?: ('card' | 'promptpay' | 'transfer' | 'cash') | null;
   kind: 'deposit' | 'balance' | 'full' | 'refund';
   amount: number;
@@ -1246,7 +1246,7 @@ export interface BookingSetting {
     };
     [k: string]: unknown;
   } | null;
-  paymentProvider: 'demo' | 'omise' | 'stripe';
+  paymentProvider: 'demo' | 'omise' | 'stripe' | 'kbank';
   payMethods?: ('card' | 'promptpay' | 'transfer')[] | null;
   bankName?: string | null;
   accountName?: string | null;

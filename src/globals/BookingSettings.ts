@@ -4,8 +4,8 @@ import { adminField, adminOnly } from '../access/roles'
 import { GROUPS } from '../collections/groups'
 import { revalidateSite } from '../lib/revalidate'
 
-// Booking, payment and shop delivery settings. Admin only. The payment provider (demo, Omise or
-// Stripe) and the methods offered drive the public pay page for bookings and shop orders; the
+// Booking, payment and shop delivery settings. Admin only. The payment provider (demo, Omise,
+// Stripe or KBank) and the methods offered drive the public pay page for bookings and shop orders; the
 // delivery rules drive the shop checkout. The LINE fields are not used by any integration yet.
 export const BookingSettings: GlobalConfig = {
   slug: 'booking-settings',
@@ -48,8 +48,8 @@ export const BookingSettings: GlobalConfig = {
       label: { th: 'การรับชำระเงินออนไลน์', en: 'Online payment' },
       admin: {
         description: {
-          th: 'คีย์ของ Omise และ Stripe ตั้งในไฟล์ .env บนเซิร์ฟเวอร์ ไม่เก็บในฐานข้อมูล',
-          en: 'Omise and Stripe keys are set in the server .env file, never in the database',
+          th: 'คีย์ของ Omise, Stripe และ KBank ตั้งในไฟล์ .env บนเซิร์ฟเวอร์ ไม่เก็บในฐานข้อมูล',
+          en: 'Omise, Stripe and KBank keys are set in the server .env file, never in the database',
         },
       },
       fields: [
@@ -63,6 +63,7 @@ export const BookingSettings: GlobalConfig = {
             { label: { th: 'เดโม (ไม่ตัดเงินจริง)', en: 'Demo (no real money)' }, value: 'demo' },
             { label: 'Omise', value: 'omise' },
             { label: 'Stripe', value: 'stripe' },
+            { label: { th: 'กสิกรไทย (KBank)', en: 'KBank (K Payment Gateway)' }, value: 'kbank' },
           ],
         },
         {

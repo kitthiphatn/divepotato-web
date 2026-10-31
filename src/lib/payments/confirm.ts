@@ -45,7 +45,7 @@ async function locked<T>(id: number, fn: () => Promise<T>): Promise<T> {
   }
 }
 
-const ONLINE: Payment['provider'][] = ['omise', 'stripe', 'demo']
+const ONLINE: Payment['provider'][] = ['omise', 'stripe', 'kbank', 'demo']
 const label = (p: Payment) => `${p.provider} ${p.method ?? ''}`.trim()
 
 // Re-read one pending online payment from its provider and apply the result. Returns the

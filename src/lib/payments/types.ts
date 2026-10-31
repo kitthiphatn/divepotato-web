@@ -1,12 +1,13 @@
 // Shared shapes for the payment providers. Amounts are whole baht in our code; each adapter
 // converts to the provider's smallest unit (satang) and back.
-export const PROVIDERS = ['demo', 'omise', 'stripe'] as const
+export const PROVIDERS = ['demo', 'omise', 'stripe', 'kbank'] as const
 export type ProviderId = (typeof PROVIDERS)[number]
 
 export const PAY_METHODS = ['card', 'promptpay', 'transfer'] as const
 export type PayMethod = (typeof PAY_METHODS)[number]
 
-// A charge (Omise) or PaymentIntent (Stripe) as we need it, read back from the provider
+// A charge (Omise, KBank), PaymentIntent (Stripe) or KBank QR order as we need it, read back
+// from the provider
 export type Charge = {
   id: string
   status: 'pending' | 'succeeded' | 'failed'
@@ -17,7 +18,7 @@ export type Charge = {
   method: 'card' | 'promptpay'
   // Why it failed, in the provider's words
   message?: string
-  // Card: 3-D Secure page to send the customer to (Omise)
+  // Card: 3-D Secure page to send the customer to (Omise, KBank)
   authorizeUri?: string
   // Card: secret the browser confirms with Stripe.js
   clientSecret?: string
@@ -34,8 +35,8 @@ export type ChargeInput = {
 }
 
 export type Adapter = {
-  // Omise and demo charge a card token right away; Stripe creates a PaymentIntent the browser
-  // confirms (no token)
+  // Omise, KBank and demo charge a card token right away; Stripe creates a PaymentIntent the
+  // browser confirms (no token)
   card(input: ChargeInput & { token?: string; returnUri: string }): Promise<Charge>
   promptpay(input: ChargeInput & { email?: string }): Promise<Charge>
   get(id: string): Promise<Charge>

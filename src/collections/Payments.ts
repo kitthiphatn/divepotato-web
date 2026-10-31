@@ -5,7 +5,8 @@ import { auditAfterChange, auditAfterDelete } from '../hooks/audit'
 import { GROUPS } from './groups'
 
 // One record per payment attempt, for a booking or a shop order: online card/QR charges (Omise,
-// Stripe or the demo provider, `ref` = the provider's charge or PaymentIntent id), transfer slips
+// Stripe, KBank or the demo provider, `ref` = the provider's charge or PaymentIntent id, or the
+// KBank QR order id), transfer slips
 // customers upload, and payments staff record at the shop. Only admins delete payment records.
 export const Payments: CollectionConfig = {
   slug: 'payments',
@@ -86,6 +87,7 @@ export const Payments: CollectionConfig = {
           options: [
             { label: 'Omise', value: 'omise' },
             { label: 'Stripe', value: 'stripe' },
+            { label: { th: 'กสิกรไทย (KBank)', en: 'KBank' }, value: 'kbank' },
             { label: { th: 'เดโม', en: 'Demo' }, value: 'demo' },
             { label: { th: 'สลิปโอนเงิน', en: 'Transfer slip' }, value: 'slip' },
             { label: { th: 'เงินสด', en: 'Cash' }, value: 'cash' },
