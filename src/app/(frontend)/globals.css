@@ -307,14 +307,30 @@ button {
   margin-left: auto;
 }
 .nav a {
+  position: relative;
   font-size: 14px;
   padding: 8px 10px;
-  opacity: 0.86;
+  opacity: 0.72;
   transition: opacity 0.2s;
 }
-.nav a:hover,
+.nav a:hover {
+  opacity: 1;
+}
+/* the page you are on: full strength, semibold, with a yellow bar under it
+   (opacity rather than a colour so it also works on the see-through header over photos) */
 .nav a[aria-current] {
   opacity: 1;
+  font-weight: 600;
+}
+.nav a[aria-current]::after {
+  content: '';
+  position: absolute;
+  left: 10px;
+  right: 10px;
+  bottom: 0;
+  height: 3px;
+  border-radius: 3px;
+  background: var(--y);
 }
 .hr {
   display: flex;
