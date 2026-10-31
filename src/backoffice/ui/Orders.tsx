@@ -14,40 +14,26 @@ import { paidOf, type OrderVM } from '../data'
 import { fd, initials, money, shopTime, ymd } from '../format'
 import { KIND_LABEL, ORDER_STATUS_CLASS, ORDER_STATUS_LABEL, pair, PROVIDER_LABEL, translator, type Lang } from '../i18n'
 import { Icon } from '../icons'
+import {
+  filterOrders,
+  itemCount,
+  listQuery,
+  ORDER_CHIPS,
+  orderChipLabel,
+  orderChipMatch,
+  orderTotals,
+} from '../lists'
 import { BO } from '../nav'
 import type { ActionResult } from '../server'
 import { isOneSize } from '../shop'
 import { PayVia, payIcon, SlipBox, SlipCheck } from './Bookings'
+import { ListSummary } from './bits'
 import { SubTabs } from './fields'
 import { Modal } from './Modal'
 import { useToast } from './Toast'
 
 type Tr = ReturnType<typeof translator>
 type ModalKind = null | 'reject' | 'ship' | 'cancel' | 'slip'
-
-// Work first: slips to review, paid orders to pack, packed orders to hand over
-const ORDER: Record<string, number> = {
-  pending_review: 0,
-  paid: 1,
-  packed: 2,
-  pending_payment: 3,
-  shipped: 4,
-  picked_up: 4,
-  cancelled: 5,
-  refunded: 5,
-  expired: 6,
-}
-const CHIPS = [
-  ['review', ['pending_review']],
-  ['topack', ['paid']],
-  ['packed', ['packed']],
-  ['waiting', ['pending_payment']],
-  ['done', ['shipped', 'picked_up']],
-  ['cancelled', ['cancelled', 'refunded']],
-  ['expired', ['expired']],
-] as const
-const chipMatch = (chip: string, status: string) =>
-  chip === 'all' || CHIPS.some(([k, sts]) => k === chip && (sts as readonly string[]).includes(status))
 
 const minuteNow = () => Math.floor(Date.now() / 60000)
 const subscribeMinute = (cb: () => void) => {
@@ -64,7 +50,6 @@ function OrderPill({ status, lang }: { status: string; lang: Lang }) {
   )
 }
 
-const itemCount = (o: OrderVM) => o.items.reduce((n, it) => n + it.qty, 0)
 const sizeOf = (s: string, L: Tr) => (isOneSize(s) ? L('ฟรีไซซ์', 'One size') : s)
 
 function eventText(e: { event: string; note: string }, L: Tr, lang: Lang) {
@@ -143,34 +128,15 @@ export function OrdersClient({ lang, orders, tabs, initial }: OrdersProps) {
 
   const counts = useMemo(() => {
     const c: Record<string, number> = { all: orders.length }
-    for (const [k] of CHIPS) c[k] = orders.filter((o) => chipMatch(k, o.status)).length
+    for (const [k] of ORDER_CHIPS) c[k] = orders.filter((o) => orderChipMatch(k, o.status)).length
     return c
   }, [orders])
 
-  const list = useMemo(() => {
-    const s = q.trim().toLowerCase()
-    return orders
-      .filter((o) => chipMatch(chip, o.status))
-      .filter(
-        (o) =>
-          !s ||
-          [o.code, o.customer?.name, o.customer?.phone, o.trackingNo, ...o.items.map((it) => it.title)]
-            .join(' ')
-            .toLowerCase()
-            .includes(s),
-      )
-      .sort((a, b) => (ORDER[a.status] ?? 9) - (ORDER[b.status] ?? 9) || b.createdAt.localeCompare(a.createdAt))
-  }, [orders, chip, q])
+  const list = useMemo(() => filterOrders(orders, chip, q), [orders, chip, q])
+  const sum = useMemo(() => orderTotals(list), [list])
+  const qs = listQuery(chip, q)
 
-  const chipLabel: Record<string, string> = {
-    review: L('รอตรวจสลิป', 'Slip to review'),
-    topack: L('รอแพ็ก', 'To pack'),
-    packed: L('แพ็กแล้ว', 'Packed'),
-    waiting: L('รอชำระ', 'Awaiting payment'),
-    done: L('ส่งมอบแล้ว', 'Handed over'),
-    cancelled: L('ยกเลิก/คืนเงิน', 'Cancelled'),
-    expired: L('หมดเวลา', 'Expired'),
-  }
+  const chipLabel = orderChipLabel(lang)
 
   return (
     <>
@@ -199,12 +165,20 @@ export function OrdersClient({ lang, orders, tabs, initial }: OrdersProps) {
         <button type="button" aria-pressed={chip === 'all'} onClick={() => setChip('all')}>
           {L('ทั้งหมด', 'All')} <sup className="num">{counts.all}</sup>
         </button>
-        {CHIPS.filter(([k]) => k !== 'expired' || counts.expired > 0).map(([k]) => (
+        {ORDER_CHIPS.filter(([k]) => k !== 'expired' || counts.expired > 0).map(([k]) => (
           <button key={k} type="button" aria-pressed={chip === k} onClick={() => setChip(k)}>
             {chipLabel[k]} <sup className="num">{counts[k]}</sup>
           </button>
         ))}
       </div>
+      <ListSummary
+        L={L}
+        sum={sum}
+        noun={L('คำสั่งซื้อ', 'orders')}
+        unit={L('ชิ้น', 'pcs')}
+        csv={`${BO}/shop/orders/export${qs}`}
+        pdf={`${BO}/shop/orders/print${qs}`}
+      />
       <div className="card p0">
         <div className="rows">
           <div className="row head">
