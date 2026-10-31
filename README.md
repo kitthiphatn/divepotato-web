@@ -201,3 +201,8 @@ go-live checklist: [docs/payments-production.md](docs/payments-production.md).
 [docs/payments-production.md](docs/payments-production.md)
 
 See [CLAUDE.md](CLAUDE.md) for the project phases and working rules.
+
+## License
+
+Proprietary, all rights reserved. See [LICENSE](LICENSE).
+สงวนลิขสิทธิ์ ห้ามนำไปใช้หรือเผยแพร่โดยไม่ได้รับอนุญาต
