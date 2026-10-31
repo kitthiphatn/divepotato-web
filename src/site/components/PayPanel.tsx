@@ -81,15 +81,17 @@ type Props = {
   provider: ProviderId
   publicKey: string
   methods: PayMethod[]
-  deposit: number
+  // Due now: a booking's deposit or a shop order's total
+  amount: number
   holdExpiresAt: string | null
   bank: { bankName: string; accountName: string; accountNumber: string }
   lastFailed: boolean
   labels: Labels
 }
 
-// Countdown, method tabs and the three ways to pay. Every success ends in router.refresh():
-// the server page then reads the booking again and shows the paid / slip-received state.
+// Countdown, method tabs and the three ways to pay, for a booking or a shop order. Every success
+// ends in router.refresh(): the server page then reads the booking/order again and shows the paid
+// or slip-received state.
 export function PayPanel(props: Props) {
   const { methods, labels: t, holdExpiresAt, provider } = props
   const id = useId()
@@ -340,7 +342,7 @@ function CardForm(s: Shared) {
         </>
       )}
       <button className="pill y full" type="submit" disabled={busy || (provider !== 'demo' && !loaded)}>
-        {busy ? t.paying : fill(t.payBtn, { amount: baht(s.deposit) })}
+        {busy ? t.paying : fill(t.payBtn, { amount: baht(s.amount) })}
       </button>
       {provider !== 'demo' && (
         <p className="sfine">{fill(t.cardSafe, { provider: PROVIDER_NAME[provider] })}</p>
@@ -398,7 +400,7 @@ function QrPay(s: Shared) {
   if (!qr)
     return (
       <div className="qrpay">
-        <p className="hintp">{fill(t.qrScan, { amount: baht(s.deposit) })}</p>
+        <p className="hintp">{fill(t.qrScan, { amount: baht(s.amount) })}</p>
         <button className="pill y full" type="button" onClick={create} disabled={busy}>
           {busy ? t.paying : t.qrBtn}
         </button>
@@ -414,7 +416,7 @@ function QrPay(s: Shared) {
     : null
   return (
     <div className="qrpay">
-      <p className="hintp">{fill(t.qrScan, { amount: baht(s.deposit) })}</p>
+      <p className="hintp">{fill(t.qrScan, { amount: baht(s.amount) })}</p>
       <div className="qrbox">
         {s.provider === 'demo' || !qr.image ? (
           <DemoQr label={t.demoQr} />
@@ -422,7 +424,7 @@ function QrPay(s: Shared) {
           // eslint-disable-next-line @next/next/no-img-element
           <img src={qr.image} alt={t.qrAlt} width={260} height={260} />
         )}
-        <b className="num">{baht(s.deposit)}</b>
+        <b className="num">{baht(s.amount)}</b>
         {time && <small>{fill(t.qrExpires, { time })}</small>}
       </div>
       <p className="qrwait" role="status">
@@ -509,7 +511,7 @@ function Transfer(s: Shared) {
     ['bank', t.bank, bank.bankName, false],
     ['name', t.accountName, bank.accountName, false],
     ['no', t.accountNumber, bank.accountNumber, true],
-    ['amt', t.amount, baht(s.deposit), true],
+    ['amt', t.amount, baht(s.amount), true],
   ]
   return (
     <form className="xfer" onSubmit={submit}>

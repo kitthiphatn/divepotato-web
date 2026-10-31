@@ -2,19 +2,21 @@
 // from 3-D Secure, a provider webhook), a payment only counts as paid after we read the charge
 // back from the provider with our secret key; nothing the browser or a webhook body says is
 // trusted. Running it again for the same charge changes nothing.
-import type { BasePayload } from 'payload'
+import type { BasePayload, Where } from 'payload'
 
-import { countSeats } from '@/hooks/bookings'
-import type { Booking, Payment } from '@/payload-types'
+import { countSeats, relId } from '@/hooks/bookings'
+import { availableStock, withStockLock } from '@/hooks/orders'
+import type { Booking, Order, Payment } from '@/payload-types'
 import { formatTHB } from '@/lib/dates'
 
 import { adapterFor, isProvider } from './config'
+import { isOrderCode } from './link'
 import type { Charge, ProviderId } from './types'
 
 type Event = { event: string; note?: string }
 
-// The booking's timeline plus new events (the booking hook adds status changes itself)
-export function withEvents(b: Booking, events: Event[]) {
+// The booking's or order's timeline plus new events (their hooks add status changes themselves)
+export function withEvents(b: Pick<Booking, 'timeline'> | Pick<Order, 'timeline'>, events: Event[]) {
   const at = new Date().toISOString()
   return [
     ...(b.timeline ?? []).map((t) => ({
@@ -65,13 +67,9 @@ export async function reconcilePayment(
     const charge = known ?? (await adapterFor(p.provider).get(p.ref))
     if (charge.id !== p.ref || charge.status === 'pending') return p.status
 
-    const bookingId = typeof p.booking === 'object' ? p.booking.id : p.booking
-    const booking = await payload.findByID({
-      collection: 'bookings',
-      id: bookingId,
-      depth: 0,
-      overrideAccess: true,
-    })
+    const target = await targetOf(payload, p)
+    if (!target) return p.status
+    const note = (events: Event[]) => addEvents(payload, target, events)
 
     if (charge.status === 'failed') {
       await payload.update({
@@ -80,38 +78,24 @@ export async function reconcilePayment(
         data: { status: 'failed' },
         overrideAccess: true,
       })
-      await payload.update({
-        collection: 'bookings',
-        id: booking.id,
-        data: {
-          timeline: withEvents(booking, [
-            { event: 'payment failed', note: [label(p), charge.message].filter(Boolean).join(' · ') },
-          ]),
-        },
-        overrideAccess: true,
-      })
+      await note([
+        { event: 'payment failed', note: [label(p), charge.message].filter(Boolean).join(' · ') },
+      ])
       return 'failed'
     }
 
-    // Paid at the provider. Only count it when it is the charge we created for this booking.
+    // Paid at the provider. Only count it when it is the charge we created for this booking/order.
     const matches =
       charge.currency === 'thb' &&
       Math.round(charge.amount) === Math.round(p.amount) &&
-      (!charge.bookingCode || charge.bookingCode === booking.code)
+      (!charge.code || charge.code === target.doc.code)
     if (!matches) {
-      await payload.update({
-        collection: 'bookings',
-        id: booking.id,
-        data: {
-          timeline: withEvents(booking, [
-            {
-              event: 'payment mismatch',
-              note: `${label(p)} ${p.ref}: ${charge.amount} ${charge.currency} / ${charge.bookingCode ?? '-'}`,
-            },
-          ]),
+      await note([
+        {
+          event: 'payment mismatch',
+          note: `${label(p)} ${p.ref}: ${charge.amount} ${charge.currency} / ${charge.code ?? '-'}`,
         },
-        overrideAccess: true,
-      })
+      ])
       return p.status
     }
 
@@ -121,9 +105,42 @@ export async function reconcilePayment(
       data: { status: 'succeeded' },
       overrideAccess: true,
     })
-    await applyPaid(payload, booking, p)
+    if (target.kind === 'order') await applyOrderPaid(payload, target.doc, p)
+    else await applyPaid(payload, target.doc, p)
     return 'succeeded'
   })
+}
+
+type Target = { kind: 'booking'; doc: Booking } | { kind: 'order'; doc: Order }
+
+// The booking or shop order a payment belongs to
+async function targetOf(payload: BasePayload, p: Payment): Promise<Target | null> {
+  const orderId = relId(p.order)
+  if (orderId) {
+    const doc = await payload.findByID({ collection: 'orders', id: orderId, depth: 0, overrideAccess: true })
+    return { kind: 'order', doc }
+  }
+  const bookingId = relId(p.booking)
+  if (!bookingId) return null
+  const doc = await payload.findByID({ collection: 'bookings', id: bookingId, depth: 0, overrideAccess: true })
+  return { kind: 'booking', doc }
+}
+
+async function addEvents(payload: BasePayload, t: Target, events: Event[]) {
+  if (t.kind === 'order')
+    await payload.update({
+      collection: 'orders',
+      id: t.doc.id,
+      data: { timeline: withEvents(t.doc, events) },
+      overrideAccess: true,
+    })
+  else
+    await payload.update({
+      collection: 'bookings',
+      id: t.doc.id,
+      data: { timeline: withEvents(t.doc, events) },
+      overrideAccess: true,
+    })
 }
 
 // Move the booking on after a successful online payment
@@ -178,16 +195,68 @@ async function applyPaid(payload: BasePayload, b: Booking, p: Payment) {
   })
 }
 
-// Pending online payments of one booking (pay page load, 3-D Secure return)
-export async function reconcileBooking(payload: BasePayload, bookingId: number) {
+// Move a shop order on after a successful online payment. Paying moves it to `paid`, which takes
+// the items off stock (see hooks/orders).
+async function applyOrderPaid(payload: BasePayload, o: Order, p: Payment) {
+  const { docs } = await payload.find({
+    collection: 'payments',
+    where: { and: [{ order: { equals: o.id } }, { status: { equals: 'succeeded' } }] },
+    pagination: false,
+    depth: 0,
+    overrideAccess: true,
+  })
+  const paid = docs.reduce((sum, x) => sum + (x.kind === 'refund' ? -x.amount : x.amount), 0)
+  const full = paid >= (o.total ?? 0)
+  const events: Event[] = [
+    { event: 'payment received', note: `${label(p)} · ${formatTHB(p.amount)} · ${p.ref}` },
+  ]
+  let status: Order['status'] = o.status
+
+  if (o.status === 'pending_payment' || o.status === 'pending_review') {
+    if (full) status = 'paid'
+    else events.push({ event: 'check payment amount', note: formatTHB(paid) })
+  } else if (['paid', 'packed', 'shipped', 'picked_up'].includes(o.status)) {
+    events.push({ event: 'check duplicate payment', note: formatTHB(paid) })
+  } else if (o.status === 'expired') {
+    // Paid after the hold ran out: keep the order if the items are still in stock
+    return withStockLock(async () => {
+      const ids = (o.items ?? []).map((it) => relId(it.variant)).filter((x): x is number => !!x)
+      const left = await availableStock(payload, ids, o.id)
+      const ok = full && (o.items ?? []).every((it) => (left.get(relId(it.variant) ?? 0) ?? 0) >= (it.qty ?? 0))
+      events.push(
+        ok
+          ? { event: 'paid after hold expired' }
+          : { event: 'refund needed', note: 'paid after the hold expired; out of stock' },
+      )
+      await payload.update({
+        collection: 'orders',
+        id: o.id,
+        data: { status: ok ? 'paid' : o.status, timeline: withEvents(o, events) },
+        overrideAccess: true,
+      })
+    })
+  } else {
+    events.push({ event: 'refund needed', note: `order is ${o.status}` })
+  }
+
+  await payload.update({
+    collection: 'orders',
+    id: o.id,
+    data: { status, timeline: withEvents(o, events) },
+    overrideAccess: true,
+  })
+}
+
+// Pending online payments of one booking or order (pay page load, 3-D Secure return)
+export async function reconcilePending(
+  payload: BasePayload,
+  of: { booking: number } | { order: number },
+) {
+  const owner: Where = 'order' in of ? { order: { equals: of.order } } : { booking: { equals: of.booking } }
   const { docs } = await payload.find({
     collection: 'payments',
     where: {
-      and: [
-        { booking: { equals: bookingId } },
-        { status: { equals: 'pending' } },
-        { provider: { in: ONLINE } },
-      ],
+      and: [owner, { status: { equals: 'pending' } }, { provider: { in: ONLINE } }],
     },
     pagination: false,
     depth: 0,
@@ -215,22 +284,24 @@ export async function reconcileRef(payload: BasePayload, provider: ProviderId, r
   })
   let p = found.docs[0]
   if (!p) {
-    if (!charge.bookingCode || charge.status !== 'succeeded') return null
-    const b = await payload.find({
-      collection: 'bookings',
-      where: { code: { equals: charge.bookingCode } },
+    if (!charge.code || charge.status !== 'succeeded') return null
+    const order = isOrderCode(charge.code)
+    const owner = await payload.find({
+      collection: order ? 'orders' : 'bookings',
+      where: { code: { equals: charge.code } },
       limit: 1,
       depth: 0,
       overrideAccess: true,
     })
-    if (!b.docs[0]) return null
+    const id = owner.docs[0]?.id
+    if (!id) return null
     p = await payload.create({
       collection: 'payments',
       data: {
-        booking: b.docs[0].id,
+        ...(order ? { order: id } : { booking: id }),
         provider,
         method: charge.method,
-        kind: 'deposit',
+        kind: order ? 'full' : 'deposit',
         amount: charge.amount,
         status: 'pending',
         ref: charge.id,

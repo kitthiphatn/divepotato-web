@@ -4,6 +4,7 @@ import * as migration_20261028_115304_login_with_username from './20261028_11530
 import * as migration_20261030_141416_site_map_location from './20261030_141416_site_map_location';
 import * as migration_20261030_172212_online_payments from './20261030_172212_online_payments';
 import * as migration_20261030_173851_slip_check from './20261030_173851_slip_check';
+import * as migration_20261031_005616_shop_orders from './20261031_005616_shop_orders';
 
 export const migrations = [
   {
@@ -34,6 +35,11 @@ export const migrations = [
   {
     up: migration_20261030_173851_slip_check.up,
     down: migration_20261030_173851_slip_check.down,
-    name: '20261030_173851_slip_check'
+    name: '20261030_173851_slip_check',
+  },
+  {
+    up: migration_20261031_005616_shop_orders.up,
+    down: migration_20261031_005616_shop_orders.down,
+    name: '20261031_005616_shop_orders'
   },
 ];

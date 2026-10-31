@@ -1,12 +1,12 @@
-import type { CollectionConfig } from 'payload'
+import { ValidationError, type CollectionConfig } from 'payload'
 
 import { adminOnly, bookingEditors } from '../access/roles'
 import { auditAfterChange, auditAfterDelete } from '../hooks/audit'
 import { GROUPS } from './groups'
 
-// One record per payment attempt: online card/QR charges (Omise, Stripe or the demo provider,
-// `ref` = the provider's charge or PaymentIntent id), transfer slips customers upload, and
-// payments staff record at the shop. Only admins delete payment records.
+// One record per payment attempt, for a booking or a shop order: online card/QR charges (Omise,
+// Stripe or the demo provider, `ref` = the provider's charge or PaymentIntent id), transfer slips
+// customers upload, and payments staff record at the shop. Only admins delete payment records.
 export const Payments: CollectionConfig = {
   slug: 'payments',
   labels: {
@@ -16,7 +16,7 @@ export const Payments: CollectionConfig = {
   admin: {
     useAsTitle: 'ref',
     group: GROUPS.bookings,
-    defaultColumns: ['booking', 'kind', 'provider', 'amount', 'status', 'createdAt'],
+    defaultColumns: ['booking', 'order', 'kind', 'provider', 'amount', 'status', 'createdAt'],
   },
   access: {
     read: bookingEditors,
@@ -27,6 +27,21 @@ export const Payments: CollectionConfig = {
   defaultSort: '-createdAt',
   hooks: {
     beforeChange: [
+      // Every payment belongs to exactly one booking or one shop order
+      ({ data, originalDoc }) => {
+        const has = (k: 'booking' | 'order') => Boolean(k in data ? data[k] : originalDoc?.[k])
+        if (has('booking') === has('order'))
+          throw new ValidationError({
+            collection: 'payments',
+            errors: [
+              {
+                path: 'booking',
+                message: 'เลือกการจองหรือคำสั่งซื้ออย่างใดอย่างหนึ่ง (Choose one booking or one order)',
+              },
+            ],
+          })
+        return data
+      },
       // Stamp who reviewed a slip and when, the moment its status leaves `pending`
       ({ data, originalDoc, req }) => {
         const was = originalDoc?.status ?? 'pending'
@@ -41,12 +56,23 @@ export const Payments: CollectionConfig = {
   },
   fields: [
     {
-      name: 'booking',
-      label: { th: 'การจอง', en: 'Booking' },
-      type: 'relationship',
-      relationTo: 'bookings',
-      required: true,
-      index: true,
+      type: 'row',
+      fields: [
+        {
+          name: 'booking',
+          label: { th: 'การจอง', en: 'Booking' },
+          type: 'relationship',
+          relationTo: 'bookings',
+          index: true,
+        },
+        {
+          name: 'order',
+          label: { th: 'คำสั่งซื้อ', en: 'Order' },
+          type: 'relationship',
+          relationTo: 'orders',
+          index: true,
+        },
+      ],
     },
     {
       type: 'row',
@@ -86,6 +112,7 @@ export const Payments: CollectionConfig = {
           options: [
             { label: { th: 'มัดจำ', en: 'Deposit' }, value: 'deposit' },
             { label: { th: 'ยอดคงเหลือ', en: 'Balance' }, value: 'balance' },
+            { label: { th: 'ชำระเต็มจำนวน', en: 'Full payment' }, value: 'full' },
             { label: { th: 'คืนเงิน', en: 'Refund' }, value: 'refund' },
           ],
         },

@@ -64,7 +64,7 @@ function toCharge(p: Intent): Charge {
     status: p.status === 'succeeded' ? 'succeeded' : failed ? 'failed' : 'pending',
     amount: (p.status === 'succeeded' ? (p.amount_received ?? p.amount) : p.amount) / 100,
     currency: p.currency.toLowerCase(),
-    bookingCode: p.metadata?.booking ?? null,
+    code: p.metadata?.booking ?? null,
     method: qr ? 'promptpay' : 'card',
     message: p.last_payment_error?.message,
     clientSecret: p.client_secret ?? undefined,
@@ -78,7 +78,7 @@ const base = (i: ChargeInput, type: 'card' | 'promptpay') =>
     amount: String(Math.round(i.amount * 100)),
     currency: 'thb',
     description: i.description,
-    'metadata[booking]': i.bookingCode,
+    'metadata[booking]': i.code,
     'payment_method_types[]': type,
   })
 

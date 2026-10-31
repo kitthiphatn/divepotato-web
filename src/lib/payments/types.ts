@@ -12,8 +12,8 @@ export type Charge = {
   status: 'pending' | 'succeeded' | 'failed'
   amount: number
   currency: string
-  // Booking code we put in the charge's metadata when creating it
-  bookingCode: string | null
+  // Booking or shop order code we put in the charge's metadata (key `booking`) when creating it
+  code: string | null
   method: 'card' | 'promptpay'
   // Why it failed, in the provider's words
   message?: string
@@ -28,7 +28,8 @@ export type Charge = {
 
 export type ChargeInput = {
   amount: number
-  bookingCode: string
+  // Booking or shop order code
+  code: string
   description: string
 }
 

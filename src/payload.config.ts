@@ -15,6 +15,7 @@ import { Departures } from './collections/Departures'
 import { DiveSites } from './collections/DiveSites'
 import { Faqs } from './collections/Faqs'
 import { Media } from './collections/Media'
+import { Orders } from './collections/Orders'
 import { Payments } from './collections/Payments'
 import { Posts } from './collections/Posts'
 import { Products } from './collections/Products'
@@ -83,6 +84,7 @@ export default buildConfig({
     DiveSites,
     Products,
     ProductVariants,
+    Orders,
     RentalItems,
     Posts,
     Faqs,

@@ -52,7 +52,7 @@ function toCharge(c: OmiseCharge): Charge {
           : 'failed',
     amount: c.amount / 100,
     currency: c.currency.toLowerCase(),
-    bookingCode: typeof c.metadata?.booking === 'string' ? c.metadata.booking : null,
+    code: typeof c.metadata?.booking === 'string' ? c.metadata.booking : null,
     method: qr ? 'promptpay' : 'card',
     message: c.failure_message ?? undefined,
     authorizeUri: c.authorize_uri ?? undefined,
@@ -65,7 +65,7 @@ const base = (i: ChargeInput) => ({
   amount: Math.round(i.amount * 100),
   currency: 'thb',
   description: i.description,
-  metadata: { booking: i.bookingCode },
+  metadata: { booking: i.code },
 })
 
 export const omise: Adapter = {

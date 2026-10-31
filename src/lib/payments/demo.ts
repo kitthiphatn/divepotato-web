@@ -20,7 +20,7 @@ export const demo: Adapter = {
       status: ok ? 'succeeded' : 'failed',
       amount: i.amount,
       currency: 'thb',
-      bookingCode: i.bookingCode,
+      code: i.code,
       method: 'card',
       message: ok ? undefined : 'Card declined (demo)',
     }
@@ -33,7 +33,7 @@ export const demo: Adapter = {
       status: 'pending',
       amount: i.amount,
       currency: 'thb',
-      bookingCode: i.bookingCode,
+      code: i.code,
       method: 'promptpay',
       expiresAt: new Date(Date.now() + 15 * 60_000).toISOString(),
     }
@@ -48,7 +48,7 @@ export const demo: Adapter = {
         status: 'pending',
         amount: 0,
         currency: 'thb',
-        bookingCode: null,
+        code: null,
         method: 'promptpay',
       }
     )

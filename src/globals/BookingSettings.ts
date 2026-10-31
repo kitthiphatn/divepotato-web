@@ -4,8 +4,9 @@ import { adminField, adminOnly } from '../access/roles'
 import { GROUPS } from '../collections/groups'
 import { revalidateSite } from '../lib/revalidate'
 
-// Booking and payment settings. Admin only. The payment provider (demo, Omise or Stripe) and the
-// methods offered drive the public pay page; the LINE fields are not used by any integration yet.
+// Booking, payment and shop delivery settings. Admin only. The payment provider (demo, Omise or
+// Stripe) and the methods offered drive the public pay page for bookings and shop orders; the
+// delivery rules drive the shop checkout. The LINE fields are not used by any integration yet.
 export const BookingSettings: GlobalConfig = {
   slug: 'booking-settings',
   label: { th: 'ตั้งค่าการจองและชำระเงิน', en: 'Booking settings' },
@@ -82,6 +83,55 @@ export const BookingSettings: GlobalConfig = {
             { name: 'bankName', label: { th: 'ธนาคาร', en: 'Bank' }, type: 'text' },
             { name: 'accountName', label: { th: 'ชื่อบัญชี', en: 'Account name' }, type: 'text' },
             { name: 'accountNumber', label: { th: 'เลขที่บัญชี', en: 'Account number' }, type: 'text' },
+          ],
+        },
+      ],
+    },
+    {
+      type: 'collapsible',
+      label: { th: 'ร้านค้าออนไลน์: การจัดส่ง', en: 'Online shop: delivery' },
+      fields: [
+        {
+          type: 'row',
+          fields: [
+            {
+              name: 'pickupEnabled',
+              label: { th: 'รับสินค้าที่ร้านได้', en: 'Pick up at shop' },
+              type: 'checkbox',
+              defaultValue: true,
+            },
+            {
+              name: 'shippingEnabled',
+              label: { th: 'ส่งไปรษณีย์ได้', en: 'Ship by post' },
+              type: 'checkbox',
+              defaultValue: true,
+            },
+          ],
+        },
+        {
+          type: 'row',
+          fields: [
+            {
+              name: 'shippingFee',
+              label: { th: 'ค่าส่ง (บาท)', en: 'Shipping fee (THB)' },
+              type: 'number',
+              required: true,
+              defaultValue: 100,
+              min: 0,
+            },
+            {
+              name: 'freeShippingMin',
+              label: { th: 'ส่งฟรีเมื่อซื้อครบ (บาท)', en: 'Free shipping from (THB)' },
+              type: 'number',
+              defaultValue: 3000,
+              min: 0,
+              admin: {
+                description: {
+                  th: 'เว้นว่างหรือ 0 = ไม่มีส่งฟรี',
+                  en: 'Empty or 0 = no free shipping',
+                },
+              },
+            },
           ],
         },
       ],

@@ -1,20 +1,22 @@
 'use server'
 
-// Pay page actions. Every call carries the booking code and the pay-link token; the booking must
-// still be on hold. Card and QR results are always read back from the provider (see
+// Pay page actions, for a booking's deposit or a shop order's full amount. Every call carries the
+// booking/order code and the pay-link token; the booking must still be on hold, the order still
+// waiting for payment. Card and QR results are always read back from the provider (see
 // lib/payments/confirm), never taken from the browser.
 import config from '@payload-config'
 import { randomBytes } from 'node:crypto'
 import { getPayload, type BasePayload } from 'payload'
 
 import { expireStaleHolds } from '@/hooks/bookings'
+import { expireStaleOrders } from '@/hooks/orders'
 import { isLocale, type Locale } from '@/i18n/config'
 import { adapterFor, getPayConfig, type PayConfig } from '@/lib/payments/config'
 import { reconcilePayment, withEvents } from '@/lib/payments/confirm'
 import { simulateDemoPaid } from '@/lib/payments/demo'
-import { bookingFromLink, payPath } from '@/lib/payments/link'
+import { bookingFromLink, isOrderCode, orderFromLink, payPath } from '@/lib/payments/link'
 import { checkSlip } from '@/lib/payments/slip'
-import type { Booking, Customer } from '@/payload-types'
+import type { Booking, Customer, Order, Payment } from '@/payload-types'
 import { getDict } from '@/site/i18n'
 import { siteUrl } from '@/site/seo'
 
@@ -35,25 +37,77 @@ export type PayResult =
 
 type Link = { locale: string; code: string; token: string }
 
-const relId = (v: number | { id: number }) => (typeof v === 'object' ? v.id : v)
+const relId = (v: number | { id: number } | null | undefined) =>
+  v && typeof v === 'object' ? v.id : (v ?? null)
 
-// The booking behind the link, still on hold and inside its hold time
+// What the link pays for: a booking's deposit or a shop order's total
+type Payable = {
+  owner: { booking: number } | { order: number }
+  code: string
+  amount: number
+  kind: 'deposit' | 'full'
+  customer: number
+  booking?: Booking
+  order?: Order
+}
+
+const payableOf = (b: Booking | null, o: Order | null): Payable | null =>
+  b
+    ? {
+        owner: { booking: b.id },
+        code: b.code!,
+        amount: b.deposit ?? 0,
+        kind: 'deposit',
+        customer: relId(b.customer)!,
+        booking: b,
+      }
+    : o
+      ? {
+          owner: { order: o.id },
+          code: o.code!,
+          amount: o.total ?? 0,
+          kind: 'full',
+          customer: relId(o.customer)!,
+          order: o,
+        }
+      : null
+
+// The booking or order behind a link, whatever its status
+async function fromLink(payload: BasePayload, code: string, token: string) {
+  return isOrderCode(code)
+    ? payableOf(null, await orderFromLink(payload, code, token))
+    : payableOf(await bookingFromLink(payload, code, token), null)
+}
+
+const belongs = (p: Payment, x: Payable) =>
+  'order' in x.owner ? relId(p.order) === x.owner.order : relId(p.booking) === x.owner.booking
+
+// The booking (still on hold) or order (still waiting for payment) behind the link, inside its
+// hold time
 async function open(link: Link): Promise<
-  | { ok: true; payload: BasePayload; booking: Booking; cfg: PayConfig; locale: Locale }
+  | { ok: true; payload: BasePayload; x: Payable; cfg: PayConfig; locale: Locale }
   | { ok: false; error: string }
 > {
   const locale: Locale = isLocale(link.locale) ? link.locale : 'th'
   const t = getDict(locale).pay
   const payload = await getPayload({ config })
-  let booking = await bookingFromLink(payload, String(link.code), String(link.token))
-  if (!booking) return { ok: false, error: t.error }
-  if (booking.status === 'hold' && booking.holdExpiresAt && Date.parse(booking.holdExpiresAt) <= Date.now()) {
-    await expireStaleHolds(payload, relId(booking.departure))
-    booking = await payload.findByID({ collection: 'bookings', id: booking.id, depth: 0, overrideAccess: true })
+  const code = String(link.code)
+  const token = String(link.token)
+  let x = await fromLink(payload, code, token)
+  if (!x) return { ok: false, error: t.error }
+  const late = (at?: string | null) => Boolean(at && Date.parse(at) <= Date.now())
+  if (x.booking?.status === 'hold' && late(x.booking.holdExpiresAt)) {
+    await expireStaleHolds(payload, relId(x.booking.departure)!)
+    x = await fromLink(payload, code, token)
+  } else if (x.order?.status === 'pending_payment' && late(x.order.holdExpiresAt)) {
+    await expireStaleOrders(payload)
+    x = await fromLink(payload, code, token)
   }
-  if (booking.status !== 'hold') return { ok: false, error: t.expiredT }
-  if (!(booking.deposit && booking.deposit > 0)) return { ok: false, error: t.error }
-  return { ok: true, payload, booking, cfg: await getPayConfig(payload), locale }
+  if (!x) return { ok: false, error: t.error }
+  const waiting = x.booking ? x.booking.status === 'hold' : x.order?.status === 'pending_payment'
+  if (!waiting) return { ok: false, error: x.order ? getDict(locale).order.expiredT : t.expiredT }
+  if (!(x.amount > 0)) return { ok: false, error: t.error }
+  return { ok: true, payload, x, cfg: await getPayConfig(payload), locale }
 }
 
 const fail = (locale: string, err: unknown, what: string) => {
@@ -61,32 +115,33 @@ const fail = (locale: string, err: unknown, what: string) => {
   return { ok: false as const, error: getDict(isLocale(locale) ? locale : 'th').pay.error }
 }
 
-const description = (b: Booking) => `Dive Potato ${b.code} deposit`
+const description = (x: Payable) =>
+  `Dive Potato ${x.code} ${x.kind === 'full' ? 'shop order' : 'deposit'}`
+
+// A new pending payment record for the booking/order
+const newPayment = (x: Payable, data: Omit<Payment, 'id' | 'updatedAt' | 'createdAt' | 'kind' | 'amount'>) => ({
+  ...x.owner,
+  kind: x.kind,
+  amount: x.amount,
+  ...data,
+})
 
 export async function payCardAction(input: Link & { cardToken?: string }): Promise<PayResult> {
   const o = await open(input)
   if (!o.ok) return o
-  const { payload, booking, cfg } = o
+  const { payload, x, cfg } = o
   if (!cfg.methods.includes('card')) return { ok: false, error: getDict(o.locale).pay.error }
   try {
     const charge = await adapterFor(cfg.provider).card({
-      amount: booking.deposit!,
-      bookingCode: booking.code!,
-      description: description(booking),
+      amount: x.amount,
+      code: x.code,
+      description: description(x),
       token: input.cardToken,
-      returnUri: `${siteUrl()}${payPath(o.locale, booking.code!, String(input.token))}`,
+      returnUri: `${siteUrl()}${payPath(o.locale, x.code, String(input.token))}`,
     })
     const p = await payload.create({
       collection: 'payments',
-      data: {
-        booking: booking.id,
-        provider: cfg.provider,
-        method: 'card',
-        kind: 'deposit',
-        amount: booking.deposit!,
-        status: 'pending',
-        ref: charge.id,
-      },
+      data: newPayment(x, { provider: cfg.provider, method: 'card', status: 'pending', ref: charge.id }),
       overrideAccess: true,
     })
     if (charge.clientSecret && cfg.provider === 'stripe')
@@ -103,7 +158,7 @@ export async function payCardAction(input: Link & { cardToken?: string }): Promi
 export async function payQrAction(input: Link): Promise<PayResult> {
   const o = await open(input)
   if (!o.ok) return o
-  const { payload, booking, cfg } = o
+  const { payload, x, cfg } = o
   if (!cfg.methods.includes('promptpay')) return { ok: false, error: getDict(o.locale).pay.error }
   try {
     // Stripe needs an email on PromptPay payments: the customer's, else the shop's
@@ -111,7 +166,7 @@ export async function payQrAction(input: Link): Promise<PayResult> {
     if (cfg.provider === 'stripe') {
       const c = (await payload.findByID({
         collection: 'customers',
-        id: relId(booking.customer),
+        id: x.customer,
         depth: 0,
         overrideAccess: true,
       })) as Customer
@@ -119,22 +174,14 @@ export async function payQrAction(input: Link): Promise<PayResult> {
       email = c.email || site.contact?.email || undefined
     }
     const charge = await adapterFor(cfg.provider).promptpay({
-      amount: booking.deposit!,
-      bookingCode: booking.code!,
-      description: description(booking),
+      amount: x.amount,
+      code: x.code,
+      description: description(x),
       email,
     })
     const p = await payload.create({
       collection: 'payments',
-      data: {
-        booking: booking.id,
-        provider: cfg.provider,
-        method: 'promptpay',
-        kind: 'deposit',
-        amount: booking.deposit!,
-        status: 'pending',
-        ref: charge.id,
-      },
+      data: newPayment(x, { provider: cfg.provider, method: 'promptpay', status: 'pending', ref: charge.id }),
       overrideAccess: true,
     })
     const status = await reconcilePayment(payload, p.id, charge)
@@ -156,12 +203,12 @@ export async function checkPaymentAction(input: Link & { paymentId: number }): P
   const locale = isLocale(input.locale) ? input.locale : 'th'
   try {
     const payload = await getPayload({ config })
-    const booking = await bookingFromLink(payload, String(input.code), String(input.token))
-    if (!booking) return { ok: false, error: getDict(locale).pay.error }
+    const x = await fromLink(payload, String(input.code), String(input.token))
+    if (!x) return { ok: false, error: getDict(locale).pay.error }
     const p = await payload
       .findByID({ collection: 'payments', id: Number(input.paymentId), depth: 0, overrideAccess: true })
       .catch(() => null)
-    if (!p || relId(p.booking) !== booking.id) return { ok: false, error: getDict(locale).pay.error }
+    if (!p || !belongs(p, x)) return { ok: false, error: getDict(locale).pay.error }
     const status = await reconcilePayment(payload, p.id)
     return { ok: true, status, paymentId: p.id }
   } catch (err) {
@@ -173,13 +220,13 @@ export async function checkPaymentAction(input: Link & { paymentId: number }): P
 export async function simulateDemoAction(input: Link & { paymentId: number }): Promise<PayResult> {
   const locale = isLocale(input.locale) ? input.locale : 'th'
   const payload = await getPayload({ config })
-  const booking = await bookingFromLink(payload, String(input.code), String(input.token))
-  const p = booking
+  const x = await fromLink(payload, String(input.code), String(input.token))
+  const p = x
     ? await payload
         .findByID({ collection: 'payments', id: Number(input.paymentId), depth: 0, overrideAccess: true })
         .catch(() => null)
     : null
-  if (!booking || !p || relId(p.booking) !== booking.id || p.provider !== 'demo' || !p.ref)
+  if (!x || !p || !belongs(p, x) || p.provider !== 'demo' || !p.ref)
     return { ok: false, error: getDict(locale).pay.error }
   simulateDemoPaid(p.ref)
   return { ok: true, status: await reconcilePayment(payload, p.id), paymentId: p.id }
@@ -207,8 +254,8 @@ function sniff(b: Buffer): string | null {
 }
 
 // Bank transfer: save the slip, read its QR (see lib/payments/slip), record a pending payment
-// and hand the booking to staff (pending_review keeps its seats until they approve or reject the
-// slip). Never approved automatically, whatever the QR check says.
+// and hand the booking or order to staff (pending_review keeps its seats or stock until they
+// approve or reject the slip). Never approved automatically, whatever the QR check says.
 export async function uploadSlipAction(form: FormData): Promise<PayResult> {
   const link = {
     locale: String(form.get('locale') ?? ''),
@@ -218,7 +265,7 @@ export async function uploadSlipAction(form: FormData): Promise<PayResult> {
   const o = await open(link)
   if (!o.ok) return o
   const t = getDict(o.locale).pay
-  const { payload, booking, cfg } = o
+  const { payload, x, cfg } = o
   if (!cfg.methods.includes('transfer')) return { ok: false, error: t.error }
   const file = form.get('slip')
   if (!(file instanceof File) || file.size === 0 || file.size > MAX_SLIP)
@@ -229,39 +276,40 @@ export async function uploadSlipAction(form: FormData): Promise<PayResult> {
   try {
     const check = await checkSlip(payload, data)
     // Random file name so slips can't be found by guessing
-    const name = `slip-${booking.code}-${randomBytes(8).toString('hex')}.${SLIP_TYPES[type]}`
+    const name = `slip-${x.code}-${randomBytes(8).toString('hex')}.${SLIP_TYPES[type]}`
     const media = await payload.create({
       collection: 'media',
-      data: { alt: `Slip ${booking.code}` },
+      data: { alt: `Slip ${x.code}` },
       file: { data, mimetype: type, name, size: data.length },
       overrideAccess: true,
     })
     await payload.create({
       collection: 'payments',
-      data: {
-        booking: booking.id,
+      data: newPayment(x, {
         provider: 'slip',
         method: 'transfer',
-        kind: 'deposit',
-        amount: booking.deposit!,
         status: 'pending',
         slip: media.id,
         slipRef: check.slipRef,
         slipCheck: check.slipCheck,
-      },
+      }),
       overrideAccess: true,
     })
-    await payload.update({
-      collection: 'bookings',
-      id: booking.id,
-      data: {
-        status: 'pending_review',
-        timeline: withEvents(booking, [
-          { event: 'slip uploaded', note: check.slipCheck === 'ok' ? undefined : check.slipCheck },
-        ]),
-      },
-      overrideAccess: true,
-    })
+    const events = [{ event: 'slip uploaded', note: check.slipCheck === 'ok' ? undefined : check.slipCheck }]
+    if (x.order)
+      await payload.update({
+        collection: 'orders',
+        id: x.order.id,
+        data: { status: 'pending_review', timeline: withEvents(x.order, events) },
+        overrideAccess: true,
+      })
+    else if (x.booking)
+      await payload.update({
+        collection: 'bookings',
+        id: x.booking.id,
+        data: { status: 'pending_review', timeline: withEvents(x.booking, events) },
+        overrideAccess: true,
+      })
     return { ok: true, status: 'pending' }
   } catch (err) {
     return fail(o.locale, err, 'slip')

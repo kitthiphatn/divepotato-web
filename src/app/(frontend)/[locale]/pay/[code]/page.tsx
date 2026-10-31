@@ -8,13 +8,16 @@ import { expireStaleHolds } from '@/hooks/bookings'
 import { isLocale } from '@/i18n/config'
 import { getSite } from '@/lib/content'
 import { getPayConfig } from '@/lib/payments/config'
-import { reconcileBooking } from '@/lib/payments/confirm'
-import { bookingFromLink } from '@/lib/payments/link'
+import { reconcilePending } from '@/lib/payments/confirm'
+import { bookingFromLink, isOrderCode } from '@/lib/payments/link'
 import type { Course, Departure, Trip } from '@/payload-types'
 import { bookingContact } from '@/site/booking'
 import { PayPanel } from '@/site/components/PayPanel'
 import { dateRange, money } from '@/site/format'
 import { getDict } from '@/site/i18n'
+
+import { OrderPay } from './OrderPay'
+import { Check, Note } from './parts'
 
 type Props = {
   params: Promise<{ locale: string; code: string }>
@@ -28,18 +31,20 @@ const PAID = ['deposit_paid', 'paid', 'completed']
 
 // /<locale>/pay/<booking code>?t=<token>: deposit for a booking on hold. Pending card/QR payments
 // are checked with the provider and stale holds expired before anything is shown, so the page
-// is right after a 3-D Secure return or a reload.
+// is right after a 3-D Secure return or a reload. Shop order codes (DP-ORD-…) get the order view.
 export default async function PayPage({ params, searchParams }: Props) {
   const { locale, code } = await params
   if (!isLocale(locale)) notFound()
   const token = (await searchParams).t ?? ''
+  if (isOrderCode(decodeURIComponent(code)))
+    return <OrderPay locale={locale} code={decodeURIComponent(code)} token={token} />
   const t = getDict(locale)
   const p = t.pay
   const payload = await getPayload({ config })
   const found = await bookingFromLink(payload, decodeURIComponent(code), token)
   if (!found) notFound()
 
-  await reconcileBooking(payload, found.id).catch(() => null)
+  await reconcilePending(payload, { booking: found.id }).catch(() => null)
   const depId = typeof found.departure === 'object' ? found.departure.id : found.departure
   await expireStaleHolds(payload, depId)
 
@@ -139,7 +144,7 @@ export default async function PayPage({ params, searchParams }: Props) {
                 provider={cfg.provider}
                 publicKey={cfg.publicKey}
                 methods={cfg.methods}
-                deposit={b.deposit ?? 0}
+                amount={b.deposit ?? 0}
                 holdExpiresAt={b.holdExpiresAt ?? null}
                 bank={cfg.bank}
                 lastFailed={last?.status === 'failed' && last.provider !== 'slip'}
@@ -212,41 +217,5 @@ export default async function PayPage({ params, searchParams }: Props) {
         </div>
       </div>
     </section>
-  )
-}
-
-function Check() {
-  return (
-    <div className="ck2">
-      <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" aria-hidden="true">
-        <path d="M5 12.5l4.5 4.5L19 7.5" />
-      </svg>
-    </div>
-  )
-}
-
-function Note({
-  title,
-  text,
-  lineUrl,
-  lineLabel,
-}: {
-  title: string
-  text: string
-  lineUrl: string | null
-  lineLabel: string
-}) {
-  return (
-    <div className="paydone off">
-      <h2>{title}</h2>
-      <p>{text}</p>
-      {lineUrl && (
-        <div className="alt">
-          <a className="pill y" href={lineUrl} target="_blank" rel="noopener noreferrer">
-            {lineLabel}
-          </a>
-        </div>
-      )}
-    </div>
   )
 }
