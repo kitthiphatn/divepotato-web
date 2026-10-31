@@ -25,11 +25,13 @@ export type PayResult =
       ok: true
       status: 'pending' | 'succeeded' | 'failed' | 'rejected'
       paymentId?: number
-      // Omise 3-D Secure page
+      // Omise or KBank 3-D Secure page
       redirect?: string
       // Stripe card: confirm in the browser with Stripe.js
       clientSecret?: string
       qrImage?: string
+      // KBank QR: the order its widget shows (data-order-id)
+      orderId?: string
       expiresAt?: string
       message?: string
     }
@@ -131,6 +133,7 @@ export async function payCardAction(input: Link & { cardToken?: string }): Promi
   if (!o.ok) return o
   const { payload, x, cfg } = o
   if (!cfg.methods.includes('card')) return { ok: false, error: getDict(o.locale).pay.error }
+  let recorded = false
   try {
     const charge = await adapterFor(cfg.provider).card({
       amount: x.amount,
@@ -144,13 +147,27 @@ export async function payCardAction(input: Link & { cardToken?: string }): Promi
       data: newPayment(x, { provider: cfg.provider, method: 'card', status: 'pending', ref: charge.id }),
       overrideAccess: true,
     })
+    recorded = true
     if (charge.clientSecret && cfg.provider === 'stripe')
       return { ok: true, status: 'pending', paymentId: p.id, clientSecret: charge.clientSecret }
-    const status = await reconcilePayment(payload, p.id, charge)
+    if (cfg.provider === 'kbank' && charge.status === 'pending' && charge.authorizeUri)
+      return { ok: true, status: 'pending', paymentId: p.id, redirect: charge.authorizeUri }
+    // KBank: confirmed only from a fresh inquiry, not from the charge response
+    const status = await reconcilePayment(payload, p.id, cfg.provider === 'kbank' ? undefined : charge)
     if (status === 'pending' && charge.authorizeUri)
       return { ok: true, status, paymentId: p.id, redirect: charge.authorizeUri }
     return { ok: true, status, paymentId: p.id, message: charge.message }
   } catch (err) {
+    // KBank posts the card form to our route and the customer lands back on the pay page, which
+    // shows "last attempt failed" from this record (when the charge itself could not be made)
+    if (cfg.provider === 'kbank' && !recorded)
+      await payload
+        .create({
+          collection: 'payments',
+          data: newPayment(x, { provider: 'kbank', method: 'card', status: 'failed' }),
+          overrideAccess: true,
+        })
+        .catch(() => null)
     return fail(o.locale, err, 'card')
   }
 }
@@ -190,6 +207,7 @@ export async function payQrAction(input: Link): Promise<PayResult> {
       status,
       paymentId: p.id,
       qrImage: charge.qrImage,
+      orderId: cfg.provider === 'kbank' ? charge.id : undefined,
       expiresAt: charge.expiresAt,
       message: charge.message,
     }

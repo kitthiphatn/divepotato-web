@@ -31,7 +31,8 @@ export function proxy(request: NextRequest) {
   }
   if (first === 'admin') return adminInThai(request)
   // The staff backoffice has its own TH/EN toggle and no language prefix; payment provider
-  // webhooks must reach their route as sent
+  // webhooks (and KBank's card form action and return, under /webhooks/kbank) must reach their
+  // route as sent
   if (first === 'backoffice' || first === 'webhooks') return NextResponse.next()
   if (isLocale(first)) return NextResponse.next()
 
