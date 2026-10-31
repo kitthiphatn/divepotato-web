@@ -43,10 +43,14 @@ type StripeJs = {
     data: { payment_method: { card: StripeCard; billing_details?: { name?: string } } },
   ): Promise<{ error?: { message?: string } }>
 }
+// KBank's widget (kpayment.min.js): renders from its own tag's data-* settings, opens with show()
+// and, for cards, submits the form it sits in with the card token
+type KPaymentJs = { show(): void }
 declare global {
   interface Window {
     Omise?: OmiseJs
     Stripe?: (key: string) => StripeJs
+    KPayment?: KPaymentJs
   }
 }
 
@@ -90,6 +94,8 @@ type Props = {
   amount: number
   holdExpiresAt: string | null
   bank: { bankName: string; accountName: string; accountNumber: string }
+  // KBank only: widget script and card merchant id (see lib/payments/config)
+  kbank?: { script: string; mid: string }
   lastFailed: boolean
   labels: Labels
 }
@@ -199,7 +205,70 @@ function settle(r: PayResult, s: Shared) {
   if (r.status === 'failed') return s.setErr(`${t.failed}${r.message ? ` (${r.message})` : ''}. ${t.retry}`)
 }
 
+// Puts KBank's widget script into `form` with its data-* settings (KBank reads them from its own
+// tag); true once it has loaded. Each mount gets a fresh tag, removed again on unmount.
+function useKbankWidget(
+  form: React.RefObject<HTMLFormElement | null>,
+  src: string | undefined,
+  attrs: Record<string, string> | null,
+) {
+  const [loaded, setLoaded] = useState<string | null>(null)
+  const key = src && attrs ? `${src}|${JSON.stringify(attrs)}` : ''
+  useEffect(() => {
+    const el = form.current
+    if (!el || !key) return
+    const [url, json] = [key.slice(0, key.indexOf('|')), key.slice(key.indexOf('|') + 1)]
+    const tag = document.createElement('script')
+    tag.src = url
+    for (const [k, v] of Object.entries(JSON.parse(json) as Record<string, string>))
+      tag.setAttribute(`data-${k}`, v)
+    tag.addEventListener('load', () => setLoaded(key))
+    el.appendChild(tag)
+    return () => el.replaceChildren()
+  }, [form, key])
+  return Boolean(key) && loaded === key
+}
+
+const kbankAction = (path: string, link: Shared['link']) =>
+  `/webhooks/kbank/${path}?${new URLSearchParams({ locale: link.locale, code: link.code, t: link.token })}`
+
+// KBank card: its widget takes the card details and posts a token to our route, which charges it
+// (amount from the server) and sends the customer to 3-D Secure or back to this page
+function KbankCard(s: Shared) {
+  const t = s.labels
+  const form = useRef<HTMLFormElement>(null)
+  const ready = useKbankWidget(
+    form,
+    s.kbank?.script,
+    s.kbank
+      ? {
+          apikey: s.publicKey,
+          amount: s.amount.toFixed(2),
+          currency: 'THB',
+          'payment-methods': 'card',
+          name: 'Dive Potato',
+          mid: s.kbank.mid,
+          'show-button': 'false',
+        }
+      : null,
+  )
+  return (
+    <div className="cardf">
+      <form ref={form} method="POST" action={kbankAction('card', s.link)} />
+      <button className="pill y full" type="button" disabled={!ready} onClick={() => window.KPayment?.show()}>
+        {fill(t.payBtn, { amount: baht(s.amount) })}
+      </button>
+      <p className="sfine">{fill(t.cardSafe, { provider: PROVIDER_NAME.kbank })}</p>
+    </div>
+  )
+}
+
 function CardForm(s: Shared) {
+  if (s.provider === 'kbank') return <KbankCard {...s} />
+  return <TokenCardForm {...s} />
+}
+
+function TokenCardForm(s: Shared) {
   const t = s.labels
   const { provider, publicKey } = s
   const [busy, setBusy] = useState(false)
@@ -359,7 +428,12 @@ function CardForm(s: Shared) {
 function QrPay(s: Shared) {
   const t = s.labels
   const [busy, setBusy] = useState(false)
-  const [qr, setQr] = useState<{ paymentId: number; image?: string; expiresAt?: string } | null>(null)
+  const [qr, setQr] = useState<{
+    paymentId: number
+    image?: string
+    orderId?: string
+    expiresAt?: string
+  } | null>(null)
   const { link, setErr, onPaid } = s
   const key = `${link.locale}|${link.code}|${link.token}`
 
@@ -391,7 +465,7 @@ function QrPay(s: Shared) {
     if (!r || !r.ok) return setErr(r && !r.ok ? r.error : t.error)
     if (r.status === 'succeeded') return onPaid()
     if (r.status !== 'pending' || !r.paymentId) return setErr(`${t.failed}. ${t.retry}`)
-    setQr({ paymentId: r.paymentId, image: r.qrImage, expiresAt: r.expiresAt })
+    setQr({ paymentId: r.paymentId, image: r.qrImage, orderId: r.orderId, expiresAt: r.expiresAt })
   }
 
   const simulate = async () => {
@@ -423,7 +497,9 @@ function QrPay(s: Shared) {
     <div className="qrpay">
       <p className="hintp">{fill(t.qrScan, { amount: baht(s.amount) })}</p>
       <div className="qrbox">
-        {s.provider === 'demo' || !qr.image ? (
+        {s.provider === 'kbank' && qr.orderId ? (
+          <KbankQr {...s} orderId={qr.orderId} />
+        ) : s.provider === 'demo' || !qr.image ? (
           <DemoQr label={t.demoQr} />
         ) : (
           // eslint-disable-next-line @next/next/no-img-element
@@ -445,6 +521,39 @@ function QrPay(s: Shared) {
         {t.qrNew}
       </button>
     </div>
+  )
+}
+
+// KBank QR: its widget shows the QR of the order we created; opened right away and again from
+// the button. Payment is still detected by the polling above (and KBank's webhook).
+function KbankQr(s: Shared & { orderId: string }) {
+  const t = s.labels
+  const form = useRef<HTMLFormElement>(null)
+  const ready = useKbankWidget(
+    form,
+    s.kbank?.script,
+    s.kbank
+      ? {
+          apikey: s.publicKey,
+          amount: s.amount.toFixed(2),
+          currency: 'THB',
+          'payment-methods': 'qr',
+          name: 'Dive Potato',
+          'order-id': s.orderId,
+          'show-button': 'false',
+        }
+      : null,
+  )
+  useEffect(() => {
+    if (ready) window.KPayment?.show()
+  }, [ready])
+  return (
+    <>
+      <form ref={form} method="POST" action={kbankAction('return', s.link)} />
+      <button className="pill y" type="button" disabled={!ready} onClick={() => window.KPayment?.show()}>
+        {t.qrBtn}
+      </button>
+    </>
   )
 }
 

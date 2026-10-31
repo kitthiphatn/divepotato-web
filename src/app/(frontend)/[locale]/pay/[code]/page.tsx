@@ -147,6 +147,7 @@ export default async function PayPage({ params, searchParams }: Props) {
                 amount={b.deposit ?? 0}
                 holdExpiresAt={b.holdExpiresAt ?? null}
                 bank={cfg.bank}
+                kbank={cfg.kbank}
                 lastFailed={last?.status === 'failed' && last.provider !== 'slip'}
                 labels={p}
               />

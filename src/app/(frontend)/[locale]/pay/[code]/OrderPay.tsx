@@ -144,6 +144,7 @@ export async function OrderPay({ locale, code, token }: { locale: Locale; code: 
                 amount={order.total ?? 0}
                 holdExpiresAt={order.holdExpiresAt ?? null}
                 bank={cfg.bank}
+                kbank={cfg.kbank}
                 lastFailed={last?.status === 'failed' && last.provider !== 'slip'}
                 labels={{ ...p, holdLeft: o.holdLeft }}
               />
