@@ -36,11 +36,12 @@ const blankStaff = (): StaffInput => ({
   password: tempPassword(),
 })
 
-type KeyStatus = Record<'omise' | 'stripe', { public: boolean; secret: boolean }>
+type KeyStatus = Record<'omise' | 'stripe' | 'kbank', { public: boolean; secret: boolean; mid?: boolean }>
 
 const ENV_NAMES = {
   omise: { public: 'OMISE_PUBLIC_KEY', secret: 'OMISE_SECRET_KEY' },
   stripe: { public: 'STRIPE_PUBLISHABLE_KEY', secret: 'STRIPE_SECRET_KEY' },
+  kbank: { public: 'KBANK_PUBLIC_KEY', secret: 'KBANK_SECRET_KEY', mid: 'KBANK_MID' },
 }
 const PROVIDER_CARDS: {
   id: ProviderId
@@ -74,6 +75,14 @@ const PROVIDER_CARDS: {
     dth: 'บัตรและ QR พร้อมเพย์ ยืนยันอัตโนมัติ',
     den: 'Card and PromptPay QR, confirmed automatically',
   },
+  {
+    id: 'kbank',
+    icon: 'card',
+    th: 'กสิกรไทย (KBank)',
+    en: 'KBank',
+    dth: 'K Payment Gateway บัตรและ QR พร้อมเพย์ ยืนยันอัตโนมัติ บัตรต้องมี KBANK_MID ด้วย',
+    den: 'K Payment Gateway card and PromptPay QR, confirmed automatically. Cards also need KBANK_MID',
+  },
 ]
 const METHODS: { id: PayMethod; th: string; en: string }[] = [
   { id: 'card', th: 'บัตรเครดิต/เดบิต', en: 'Credit/debit card' },
@@ -103,7 +112,7 @@ export function SettingsForm({
   staff: StaffRow[]
   balanceDays: number
   payKeys: KeyStatus
-  webhooks: { omise: string; stripe: string }
+  webhooks: { omise: string; stripe: string; kbank: string; kbankReturn: string }
 }) {
   const L = translator(lang)
   const toast = useToast()
@@ -287,8 +296,8 @@ export function SettingsForm({
           <h3>{L('ช่องทางรับชำระเงิน', 'Payment channels')}</h3>
           <p className="hint">
             {L(
-              'ลูกค้าชำระมัดจำบนหน้าเว็บหลังกดจอง คีย์ของ Omise และ Stripe ตั้งในไฟล์ .env บนเซิร์ฟเวอร์',
-              'Customers pay the deposit on the website after booking. Omise and Stripe keys are set in the server .env file',
+              'ลูกค้าชำระมัดจำบนหน้าเว็บหลังกดจอง คีย์ของ Omise, Stripe และ KBank ตั้งในไฟล์ .env บนเซิร์ฟเวอร์',
+              'Customers pay the deposit on the website after booking. Omise, Stripe and KBank keys are set in the server .env file',
             )}
           </p>
           <div className="conn" role="radiogroup" aria-label={L('ผู้ให้บริการ', 'Provider')}>
@@ -311,11 +320,15 @@ export function SettingsForm({
                   <p>{L(p.dth, p.den)}</p>
                   {keys && env ? (
                     <span className="keys">
-                      {(['public', 'secret'] as const).map((k) => (
-                        <span key={k} className={`pill nodot ${keys[k] ? 'st-paid' : 'st-cancelled'}`}>
-                          {env[k]} {keys[k] ? L('ตั้งแล้ว', 'set') : L('ยังไม่ตั้ง', 'missing')}
-                        </span>
-                      ))}
+                      {(['public', 'secret', 'mid'] as const).map((k) => {
+                        const name = (env as Partial<Record<typeof k, string>>)[k]
+                        if (!name) return null
+                        return (
+                          <span key={k} className={`pill nodot ${keys[k] ? 'st-paid' : 'st-cancelled'}`}>
+                            {name} {keys[k] ? L('ตั้งแล้ว', 'set') : L('ยังไม่ตั้ง', 'missing')}
+                          </span>
+                        )
+                      })}
                     </span>
                   ) : (
                     <span className="pill nodot st-review">
@@ -331,19 +344,30 @@ export function SettingsForm({
               <Icon name="alert" />
               <span>
                 {L(
-                  'โหมดเดโม: ลูกค้าเห็นแบบฟอร์มจำลอง ไม่มีการตัดเงินจริง ใช้บัตรทดสอบ 4242 4242 4242 4242 เปลี่ยนเป็น Omise หรือ Stripe ก่อนเปิดใช้งานจริง',
-                  'Demo mode: customers see a simulated form and no money is taken. Test card 4242 4242 4242 4242. Switch to Omise or Stripe before going live.',
+                  'โหมดเดโม: ลูกค้าเห็นแบบฟอร์มจำลอง ไม่มีการตัดเงินจริง ใช้บัตรทดสอบ 4242 4242 4242 4242 เปลี่ยนเป็น Omise, Stripe หรือ KBank ก่อนเปิดใช้งานจริง',
+                  'Demo mode: customers see a simulated form and no money is taken. Test card 4242 4242 4242 4242. Switch to Omise, Stripe or KBank before going live.',
+                )}
+              </span>
+            </div>
+          ) : !providerOk ? (
+            <div className="banner red">
+              <Icon name="alert" />
+              <span>
+                {L(
+                  `ยังไม่ได้ตั้งคีย์ ${ENV_NAMES[v.paymentProvider].public} และ ${ENV_NAMES[v.paymentProvider].secret} ในไฟล์ .env หน้าชำระเงินจะซ่อนบัตรและ QR จนกว่าจะตั้งคีย์และรีสตาร์ตเว็บ`,
+                  `${ENV_NAMES[v.paymentProvider].public} and ${ENV_NAMES[v.paymentProvider].secret} are not set in .env. The pay page hides card and QR until both are set and the site is restarted.`,
                 )}
               </span>
             </div>
           ) : (
-            !providerOk && (
-              <div className="banner red">
+            v.paymentProvider === 'kbank' &&
+            !payKeys.kbank.mid && (
+              <div className="banner y">
                 <Icon name="alert" />
                 <span>
                   {L(
-                    `ยังไม่ได้ตั้งคีย์ ${ENV_NAMES[v.paymentProvider].public} และ ${ENV_NAMES[v.paymentProvider].secret} ในไฟล์ .env หน้าชำระเงินจะซ่อนบัตรและ QR จนกว่าจะตั้งคีย์และรีสตาร์ตเว็บ`,
-                    `${ENV_NAMES[v.paymentProvider].public} and ${ENV_NAMES[v.paymentProvider].secret} are not set in .env. The pay page hides card and QR until both are set and the site is restarted.`,
+                    'ยังไม่ได้ตั้ง KBANK_MID (รหัสร้านค้าสำหรับบัตร) หน้าชำระเงินจะแสดงแค่ QR จนกว่าจะตั้งและรีสตาร์ตเว็บ',
+                    'KBANK_MID (the card merchant id) is not set. The pay page offers QR only until it is set and the site is restarted.',
                   )}
                 </span>
               </div>
@@ -409,6 +433,16 @@ export function SettingsForm({
               <small className="muted">
                 payment_intent.succeeded, payment_intent.payment_failed, payment_intent.canceled
               </small>
+            </dd>
+            <dt>KBank</dt>
+            <dd className="num">
+              {webhooks.kbank}
+              <br />
+              <small className="muted">Notify URL</small>
+              <br />
+              {webhooks.kbankReturn}
+              <br />
+              <small className="muted">Callback URL (3-D Secure)</small>
             </dd>
           </dl>
         </section>

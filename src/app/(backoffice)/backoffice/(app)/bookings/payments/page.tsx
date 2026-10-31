@@ -10,7 +10,7 @@ import type { Booking, Customer, Media, Order, User } from '@/payload-types'
 export const metadata: Metadata = { title: 'การชำระเงิน · Payments' }
 
 const STATUSES = ['pending', 'succeeded', 'failed', 'rejected']
-const PROVIDERS = ['omise', 'stripe', 'demo', 'slip', 'cash', 'transfer']
+const PROVIDERS = ['omise', 'stripe', 'kbank', 'demo', 'slip', 'cash', 'transfer']
 const PER_PAGE = 30
 
 // /backoffice/bookings/payments: every payment record (staff and admin, as the Payments

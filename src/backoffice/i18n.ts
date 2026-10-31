@@ -72,6 +72,7 @@ export const ORDER_STATUS_CLASS: Record<string, string> = {
 export const PROVIDER_LABEL: Record<string, Pair> = {
   omise: ['Omise', 'Omise'],
   stripe: ['Stripe', 'Stripe'],
+  kbank: ['กสิกรไทย (KBank)', 'KBank'],
   demo: ['เดโม', 'Demo'],
   slip: ['สลิปโอนเงิน', 'Transfer slip'],
   cash: ['เงินสดที่ร้าน', 'Cash at shop'],
